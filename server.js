@@ -4,11 +4,76 @@ const WebSocket = require('ws');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
+const crypto = require('crypto');
+const fs = require('fs');
+
+// Функция для хеширования пароля с использованием SHA-256
+function hashPassword(password, salt) {
+  return crypto.createHmac('sha256', salt)
+    .update(password)
+    .digest('hex');
+}
+
+// Константы для аутентификации
+const ADMIN_PASSWORD = 'Z6489092Akumi!s@'; // Установленный пароль
+const SALT = 'f8a3j2k4l9z7m5n6'; // Соль для хеширования (в реальном проекте должна быть защищена)
+const SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 часа
+
+// Хеширование пароля администратора
+const ADMIN_PASSWORD_HASH = hashPassword(ADMIN_PASSWORD, SALT);
+
+// Хранилище для активных сессий
+const activeSessions = new Map();
 
 // Настройка Express
 const app = express();
 // Включаем CORS для всех запросов
 app.use(cors());
+// Для обработки JSON в запросах
+app.use(express.json());
+
+// Middleware для обработки cookie
+app.use((req, res, next) => {
+  const cookies = {};
+  const cookieHeader = req.headers.cookie;
+  
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(cookie => {
+      const parts = cookie.split('=');
+      const key = parts[0].trim();
+      const value = parts[1] || '';
+      cookies[key] = value.trim();
+    });
+  }
+  
+  req.cookies = cookies;
+  next();
+});
+
+// Middleware для проверки аутентификации
+const requireAuth = (req, res, next) => {
+  const sessionId = req.cookies['adminSessionId'];
+  
+  if (!sessionId || !activeSessions.has(sessionId)) {
+    return res.redirect('/login');
+  }
+  
+  const session = activeSessions.get(sessionId);
+  const now = Date.now();
+  
+  // Проверка срока действия сессии
+  if (now > session.expires) {
+    activeSessions.delete(sessionId);
+    return res.redirect('/login');
+  }
+  
+  // Обновляем время истечения сессии
+  session.expires = now + SESSION_MAX_AGE;
+  activeSessions.set(sessionId, session);
+  
+  next();
+};
 
 const server = http.createServer(app);
 const port = process.env.PORT || 3000;
@@ -599,7 +664,67 @@ app.get('/client.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'client.js'));
 });
 
-app.get('/admin', (req, res) => {
+// Корневой маршрут - перенаправление на страницу входа
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
+// Маршрут для страницы входа
+app.get('/login', (req, res) => {
+  // Проверяем, аутентифицирован ли уже пользователь
+  const sessionId = req.cookies['adminSessionId'];
+  if (sessionId && activeSessions.has(sessionId)) {
+    return res.redirect('/admin');
+  }
+  
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// API для аутентификации
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  
+  if (!password) {
+    return res.status(400).json({ success: false, message: 'Пароль не указан' });
+  }
+  
+  // Хешируем введённый пароль и сравниваем с хешем правильного пароля
+  const passwordHash = hashPassword(password, SALT);
+  
+  if (passwordHash !== ADMIN_PASSWORD_HASH) {
+    console.log('Неудачная попытка входа в админ-панель');
+    return res.status(401).json({ success: false, message: 'Неверный пароль' });
+  }
+  
+  // Создаём сессию
+  const sessionId = uuidv4();
+  const expires = Date.now() + SESSION_MAX_AGE;
+  
+  activeSessions.set(sessionId, { expires });
+  
+  // Устанавливаем cookie с идентификатором сессии
+  res.setHeader('Set-Cookie', `adminSessionId=${sessionId}; Path=/; HttpOnly; Max-Age=${SESSION_MAX_AGE / 1000}; SameSite=Strict`);
+  
+  console.log('Успешный вход в админ-панель');
+  res.status(200).json({ success: true });
+});
+
+// Выход из админ-панели
+app.get('/api/logout', (req, res) => {
+  const sessionId = req.cookies['adminSessionId'];
+  
+  if (sessionId) {
+    activeSessions.delete(sessionId);
+  }
+  
+  // Удаляем cookie сессии
+  res.setHeader('Set-Cookie', 'adminSessionId=; Path=/; HttpOnly; Max-Age=0');
+  
+  res.redirect('/login');
+});
+
+// Защищаем маршрут админ-панели
+app.get('/admin', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 

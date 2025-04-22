@@ -74,6 +74,37 @@
       font-weight: bold;
     }
     
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+    
+    .logout-btn {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .logout-btn:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
     .container {
       max-width: 1400px;
       margin: 0 auto;
@@ -611,10 +642,15 @@
   <header>
     <div class="header-content">
       <div class="logo">
-        <span class="logo-icon">M</span>
-        Система мониторинга веб-страниц
+        <div class="logo-icon">M</div>
+        <div>
+          Система мониторинга веб-страниц
+        </div>
       </div>
-      <div id="connection-status">Подключение...</div>
+      <div class="header-right">
+        <div id="connection-status">Подключение...</div>
+        <a href="/api/logout" class="logout-btn">Выйти</a>
+      </div>
     </div>
   </header>
   
