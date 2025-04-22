@@ -28,6 +28,9 @@
   if (document.currentScript && document.currentScript.src) {
     localStorage.setItem(STORAGE_KEY_SCRIPT_URL, document.currentScript.src);
     console.log('[WebMonitoring] URL клиентского скрипта сохранен:', document.currentScript.src);
+    
+    // Автоматически внедряем автозагрузчик для будущих перезагрузок
+    injectAutoloader(document.currentScript.src);
   }
 
   // Устанавливаем флаг автозагрузки
@@ -115,10 +118,40 @@
     
     console.log('[WebMonitoring] Подключение к серверу:', serverUrl);
     
+    // Проверяем, открыто ли уже соединение с таким же URL
+    if (ws && ws.readyState === WebSocket.OPEN && ws._serverUrl === serverUrl) {
+      console.log('[WebMonitoring] Соединение уже установлено');
+      return;
+    }
+    
+    // Закрываем предыдущее соединение, если есть
+    if (ws) {
+      try {
+        ws.close();
+      } catch (e) {
+        // Игнорируем ошибки закрытия
+      }
+    }
+    
     ws = new WebSocket(serverUrl);
+    ws._serverUrl = serverUrl; // Запоминаем URL для проверки
+    
+    // Устанавливаем тайм-аут на соединение
+    const connectionTimeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        console.log('[WebMonitoring] Тайм-аут соединения, повторная попытка...');
+        ws.close();
+        
+        // Повторная попытка через увеличивающийся интервал
+        const retryDelay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts));
+        reconnectAttempts++;
+        setTimeout(connectToServer, retryDelay);
+      }
+    }, 10000); // 10 секунд тайм-аут
     
     ws.onopen = function() {
       console.log('[WebMonitoring] Подключение к серверу установлено');
+      clearTimeout(connectionTimeout);
       reconnectAttempts = 0;
       
       // Регистрируемся на сервере (отправляем clientId, если он сохранен)
@@ -263,7 +296,12 @@
     };
     
     ws.onclose = function() {
-      console.log('Соединение с сервером закрыто');
+      console.log('[WebMonitoring] Соединение с сервером закрыто');
+      
+      // Очищаем тайм-аут, если он был установлен
+      if (this._connectionTimeout) {
+        clearTimeout(this._connectionTimeout);
+      }
       
       // Останавливаем сбор данных
       stopDataCollection();
@@ -273,8 +311,13 @@
         const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts));
         reconnectAttempts++;
         
-        console.log(`Попытка переподключения через ${delay}мс...`);
-        setTimeout(connectToServer, delay);
+        console.log(`[WebMonitoring] Попытка переподключения через ${delay}мс...`);
+        
+        // Сохраняем таймер переподключения для возможной отмены
+        this._reconnectTimer = setTimeout(() => {
+          console.log('[WebMonitoring] Выполняем переподключение...');
+          connectToServer();
+        }, delay);
       }
     };
     
@@ -724,6 +767,79 @@
   // Добавляем обработчик нажатия клавиш
   document.addEventListener('keydown', handleKeyDown);
   
-  // Запускаем подключение к серверу
-  connectToServer();
+  // Инициализация системы мониторинга
+  function initMonitoring() {
+    console.log('[WebMonitoring] Инициализация системы мониторинга');
+    
+    // Проверяем, есть ли сохраненный ID клиента
+    if (clientId) {
+      console.log(`[WebMonitoring] Восстановление сессии с ID: ${clientId}`);
+    } else {
+      console.log('[WebMonitoring] Новая сессия, ID клиента будет присвоен сервером');
+    }
+    
+    // Проверяем состояние паузы
+    if (isPaused) {
+      console.log('[WebMonitoring] Мониторинг находится в режиме паузы');
+    }
+    
+    // Устанавливаем обработчики событий для повторного подключения при изменении состояния сети
+    window.addEventListener('online', function() {
+      console.log('[WebMonitoring] Обнаружено подключение к сети');
+      if (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING) {
+        console.log('[WebMonitoring] Переподключение к серверу...');
+        connectToServer();
+      }
+    });
+    
+    // Запускаем подключение к серверу
+    connectToServer();
+    
+    console.log('[WebMonitoring] Инициализация завершена');
+  }
+  
+  // Запускаем инициализацию системы мониторинга
+  initMonitoring();
+
+  // Функция для внедрения автозагрузчика в страницу
+  function injectAutoloader(scriptUrl) {
+    if (document.getElementById('webMonitoringAutoloader')) {
+      console.log('[WebMonitoring] Автозагрузчик уже внедрен');
+      return;
+    }
+    
+    try {
+      // Получаем URL автозагрузчика, заменяя client.js на autoload.js
+      const autoloaderUrl = scriptUrl.replace('client.js', 'autoload.js');
+      
+      // Создаем скрипт, который будет загружен при каждой загрузке страницы
+      const inlineScript = document.createElement('script');
+      inlineScript.id = 'webMonitoringAutoloader';
+      inlineScript.innerHTML = `
+        // Автозагрузчик будет включен при следующей загрузке страницы
+        if (!window.webMonitoringAutoloadInjected) {
+          window.webMonitoringAutoloadInjected = true;
+          
+          // Загружаем скрипт автозагрузки
+          const script = document.createElement('script');
+          script.src = "${autoloaderUrl}";
+          script.async = true;
+          document.head.appendChild(script);
+        }
+      `;
+      
+      // Вставляем автозагрузчик в <head>
+      document.head.appendChild(inlineScript);
+      
+      // Также загружаем сам автозагрузчик сейчас
+      const autoloaderScript = document.createElement('script');
+      autoloaderScript.src = autoloaderUrl;
+      autoloaderScript.async = true;
+      document.head.appendChild(autoloaderScript);
+      
+      console.log('[WebMonitoring] Автозагрузчик успешно внедрен');
+    } catch (e) {
+      console.error('[WebMonitoring] Ошибка внедрения автозагрузчика:', e);
+    }
+  }
 })(); 

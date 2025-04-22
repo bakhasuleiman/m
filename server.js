@@ -34,7 +34,7 @@ const defaultSettings = {
 
 // Хранилище таймеров для клиентов
 const clientReconnectTimers = new Map();
-const reconnectTimeout = 30000; // 30 секунд для переподключения
+const reconnectTimeout = 10000; // Увеличиваем до 60 секунд для переподключения
 
 // Обработка WebSocket соединений
 wss.on('connection', (ws) => {
@@ -468,35 +468,28 @@ wss.on('connection', (ws) => {
         // Вместо немедленного удаления, добавляем таймер для возможности переподключения
         console.log(`Клиент ${ws.clientId} отключен, ожидаем переподключения в течение ${reconnectTimeout/1000} секунд`);
         
+        // Получаем информацию о клиенте для логирования
+        const clientInfo = clients.get(ws.clientId);
+        if (clientInfo && clientInfo.pageData) {
+          const url = clientInfo.pageData.url || 'URL неизвестен';
+          const title = clientInfo.pageData.title || 'Заголовок неизвестен';
+          console.log(`Отключенный клиент: ${url} | ${title}`);
+        }
+        
         // Очищаем предыдущий таймер, если он был
         if (clientReconnectTimers.has(ws.clientId)) {
           clearTimeout(clientReconnectTimers.get(ws.clientId));
+          console.log(`Предыдущий таймер для клиента ${ws.clientId} очищен`);
         }
         
-        // Устанавливаем новый таймер
+        // Устанавливаем новый таймер для удаления клиента
         const timerId = setTimeout(() => {
-          // Если клиент не переподключился за отведенное время, удаляем его
-          if (clients.has(ws.clientId)) {
-            clients.delete(ws.clientId);
-            
-            // НЕ удаляем историю сообщений, чтобы она сохранялась между сессиями
-            // Историю удаляем только при явном удалении клиента админом
-            
-            // Уведомляем всех админов об отключении клиента
-            broadcastToAdmins({
-              type: 'clientDisconnected',
-              clientId: ws.clientId
-            });
-            
-            console.log(`Клиент ${ws.clientId} удален после ожидания переподключения`);
-          }
-          
-          // Удаляем таймер из Map
-          clientReconnectTimers.delete(ws.clientId);
+          handleClientDisconnection(ws.clientId);
         }, reconnectTimeout);
         
         // Сохраняем ID таймера
         clientReconnectTimers.set(ws.clientId, timerId);
+        console.log(`Таймер ожидания переподключения установлен для клиента ${ws.clientId}`);
       }
     } else if (ws.role === 'admin') {
       admins.delete(ws);
@@ -525,6 +518,31 @@ function broadcastToAdmins(message) {
   admins.forEach((admin) => {
     admin.send(JSON.stringify(message));
   });
+}
+
+// Функция для очистки данных об отключенном клиенте
+function handleClientDisconnection(clientId) {
+  console.log(`Клиент ${clientId} не переподключился в течение ${reconnectTimeout/1000} секунд`);
+  
+  // Проверяем снова, не подключился ли клиент за это время
+  if (clients.has(clientId)) {
+    clients.delete(clientId);
+    
+    // Оставляем историю сообщений - она будет доступна при повторном подключении
+    // Историю удаляем только при явном удалении клиента админом
+    
+    // Уведомляем всех админов об отключении клиента
+    broadcastToAdmins({
+      type: 'clientDisconnected',
+      clientId: clientId,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`Клиент ${clientId} удален после ожидания переподключения`);
+  }
+  
+  // Удаляем таймер из Map
+  clientReconnectTimers.delete(clientId);
 }
 
 // Маршруты Express

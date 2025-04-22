@@ -3,155 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Закладка для мониторинга</title>
+    <title>Закладка для мониторинга - Создание</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 15px;
-            background-color: #f9f9f9;
+        :root {
+            --primary-color: #5046e5;
+            --primary-light: #6e66ff;
+            --secondary-color: #f0f0ff;
+            --text-color: #333;
+            --text-light: #666;
+            --border-color: #e0e0e0;
+            --background-light: #f9f9ff;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .box {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        h1 {
-            font-size: 1.5rem;
-            margin: 0 0 15px 0;
-            color: #4046e5;
-        }
-        .btn {
-            background-color: #4046e5;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
-        }
-        .btn:hover {
-            background-color: #3035c0;
-        }
-        textarea {
-            width: 100%;
-            height: 60px;
-            margin: 10px 0;
-            padding: 8px;
+        
+        * {
             box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
+            margin: 0;
+            padding: 0;
         }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: var(--text-color);
+            background-color: #f5f5f5;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-color);
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        
+        .card-description {
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+        }
+        
+        .bookmarklet {
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .bookmarklet a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .instructions {
+            margin-bottom: 2rem;
+        }
+        
+        .instructions ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        
         .note {
             background-color: #fff8e1;
-            border-left: 3px solid #ffd54f;
-            padding: 8px;
-            margin: 10px 0;
-            font-size: 13px;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
         }
-        .footer {
-            margin-top: 15px;
-            text-align: center;
-        }
-        .test-links {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
+        
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>Создание закладки "Google"</h1>
-        
-        <button id="createBookmarklet" class="btn">Создать закладку</button>
-        
-        <div class="note">
-            Перетащите кнопку на панель закладок или нажмите Ctrl+D после создания.
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">M</span>
+                Система мониторинга веб-страниц
+            </div>
         </div>
-        
-        <p>Если автоматическое создание не работает:</p>
-        <ol>
-            <li>Скопируйте код:</li>
-            <textarea id="bookmarkletCode" readonly>javascript:import('//'+window.location.host+'/loader.js')</textarea>
-            <li><button onclick="copyToClipboard()" class="btn">Копировать</button></li>
-            <li>Создайте новую закладку и вставьте код в поле URL</li>
-            <li>Назовите закладку "Google"</li>
-        </ol>
-        
-        <div class="test-links">
-            <h3>Тестирование и отладка:</h3>
-            <ul>
-                <li><a href="/test-autoload.html" class="btn">Страница для тестирования автозагрузки</a></li>
-                <li><a href="#" id="testBookmarklet" class="btn">Протестировать букмарклет на этой странице</a></li>
-            </ul>
-        </div>
-    </div>
+    </header>
     
-    <div class="footer">
-        <a href="/admin.html" class="btn">Вернуться в админ-панель</a>
-    </div>
-
-    <script>
-        // Получаем текущий домен и протокол сервера
-        const serverOrigin = window.location.origin;
+    <main class="container">
+        <a href="/" class="back-link">← Вернуться в админ-панель</a>
         
-        // Генерируем код букмарклета
-        const bookmarkletCode = `javascript:import('${serverOrigin}/loader.js')`;
-        
-        // Обновляем textarea
-        document.getElementById('bookmarkletCode').value = bookmarkletCode;
-        
-        // Функция для создания закладки
-        document.getElementById('createBookmarklet').addEventListener('click', function() {
-            const bookmarkName = "Google";
+        <div class="card">
+            <h1 class="card-title">Создать закладку для мониторинга</h1>
+            <p class="card-description">
+                Эта закладка позволяет активировать мониторинг на любом сайте, который вы посещаете. 
+                Для использования перетащите ссылку ниже на панель закладок вашего браузера.
+            </p>
             
-            // Создаем временную ссылку
-            const tempLink = document.createElement('a');
-            tempLink.href = bookmarkletCode;
-            tempLink.textContent = bookmarkName;
-            tempLink.style.display = 'none';
+            <div class="note">
+                <div class="note-title">Важно:</div>
+                <p>После перезагрузки страницы клиент автоматически переподключится, если был активирован. Данная версия включает улучшенный механизм автозагрузки.</p>
+            </div>
             
-            document.body.appendChild(tempLink);
+            <div class="bookmarklet">
+                <a href="javascript:(function(){var s=document.createElement('script');s.src='http://'+window.location.hostname+(window.location.port?':'+window.location.port:'')+'/autoload.js';document.body.appendChild(s);})();" onclick="event.preventDefault();">👁️ Мониторинг</a>
+            </div>
             
-            // Проверяем API браузера
-            if (window.sidebar && window.sidebar.addPanel) { // Firefox
-                window.sidebar.addPanel(bookmarkName, bookmarkletCode, '');
-            } else if (window.external && ('AddFavorite' in window.external)) { // IE
-                window.external.AddFavorite(bookmarkletCode, bookmarkName);
-            } else { // Chrome, Safari и другие
-                tempLink.style.display = 'inline-block';
-                tempLink.className = 'btn';
-                tempLink.draggable = true;
-                tempLink.style.margin = '10px 0';
-                tempLink.addEventListener('dragend', function() {
-                    setTimeout(function() {
-                        tempLink.style.display = 'none';
-                    }, 1000);
+            <div class="instructions">
+                <h2>Инструкция по использованию:</h2>
+                <ol>
+                    <li>Перетащите ссылку "👁️ Мониторинг" на панель закладок вашего браузера.</li>
+                    <li>Перейдите на сайт, который нужно мониторить.</li>
+                    <li>Нажмите на закладку "👁️ Мониторинг" в панели закладок.</li>
+                    <li>Скрипт мониторинга будет активирован и подключится к серверу.</li>
+                    <li>В админ-панели вы увидите новое подключение.</li>
+                    <li>После перезагрузки страницы клиент автоматически переподключится.</li>
+                </ol>
+            </div>
+            
+            <script>
+                // Динамически обновляем URL в закладке для текущего хоста
+                document.addEventListener('DOMContentLoaded', function() {
+                    const bookmarkletLink = document.querySelector('.bookmarklet a');
+                    const currentHost = window.location.host;
+                    
+                    // Обновляем текст закладки
+                    const bookmarkletCode = `javascript:(function(){var s=document.createElement('script');s.src='http://${currentHost}/autoload.js';document.body.appendChild(s);})();`;
+                    bookmarkletLink.href = bookmarkletCode;
                 });
-            }
-        });
-        
-        // Тестирование букмарклета на этой странице
-        document.getElementById('testBookmarklet').addEventListener('click', function(e) {
-            e.preventDefault();
-            // Используем новую функцию для динамического импорта
-            eval(bookmarkletCode.replace('javascript:', ''));
-        });
-        
-        // Функция для копирования кода
-        function copyToClipboard() {
-            const codeTextarea = document.getElementById('bookmarkletCode');
-            codeTextarea.select();
-            document.execCommand('copy');
-        }
-    </script>
+            </script>
+        </div>
+    </main>
 </body>
 </html> 
