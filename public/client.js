@@ -61,6 +61,7 @@
   const STORAGE_KEY_IS_PAUSED = 'webMonitoringIsPaused';
   const STORAGE_KEY_SETTINGS = 'webMonitoringSettings';
   const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
+  const STORAGE_KEY_MESSAGE_HISTORY = 'webMonitoringMessageHistory';
   
   // Сохраняем URL скрипта для автоматической загрузки при обновлении страницы
   if (document.currentScript && document.currentScript.src) {
@@ -93,6 +94,18 @@
   
   // История сообщений
   let messageHistory = [];
+  
+  // Восстанавливаем историю сообщений из localStorage
+  const savedMessageHistory = localStorage.getItem(STORAGE_KEY_MESSAGE_HISTORY);
+  if (savedMessageHistory) {
+    try {
+      messageHistory = JSON.parse(savedMessageHistory);
+      console.log(`[WebMonitoring] Восстановлено ${messageHistory.length} сообщений из localStorage`);
+    } catch (e) {
+      console.error('Ошибка при восстановлении истории сообщений:', e);
+    }
+  }
+  
   let isMessageHistoryVisible = false;
   let currentMessageIndex = -1;
   let messageHistoryContainer = null;
@@ -168,6 +181,14 @@
             localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
             localStorage.removeItem(STORAGE_KEY_IS_PAUSED);
             localStorage.removeItem(STORAGE_KEY_SETTINGS);
+            localStorage.removeItem(STORAGE_KEY_MESSAGE_HISTORY);
+            localStorage.removeItem(STORAGE_KEY_SCRIPT_URL);
+            // Очищаем историю сообщений
+            messageHistory = [];
+            // Скрываем просмотрщик сообщений, если он открыт
+            if (isMessageHistoryVisible) {
+              hideMessageHistory();
+            }
             console.log('Клиент удален');
             break;
             
@@ -186,6 +207,57 @@
               if (!isPaused) {
                 stopDataCollection();
                 startDataCollection();
+              }
+            }
+            break;
+            
+          case 'messageHistory':
+            if (message.messages && Array.isArray(message.messages)) {
+              console.log(`Получена история сообщений (${message.messages.length}) с сервера`);
+              
+              // Обрабатываем полученные сообщения
+              const serverMessages = message.messages.map(msg => ({
+                text: msg.text,
+                opacity: msg.opacity || settings.textOpacity,
+                timestamp: new Date(msg.timestamp)
+              }));
+              
+              // Объединяем с локальной историей, избегая дубликатов
+              const localMessages = messageHistory.slice();
+              const mergedMessages = [];
+              
+              // Используем Map для проверки дубликатов по тексту и примерному времени
+              const messageMap = new Map();
+              
+              // Сначала добавляем локальные сообщения
+              localMessages.forEach(msg => {
+                const key = `${msg.text}_${msg.timestamp.getTime()}`;
+                messageMap.set(key, msg);
+                mergedMessages.push(msg);
+              });
+              
+              // Затем добавляем серверные сообщения, которых нет локально
+              serverMessages.forEach(msg => {
+                const key = `${msg.text}_${msg.timestamp.getTime()}`;
+                if (!messageMap.has(key)) {
+                  mergedMessages.push(msg);
+                  messageMap.set(key, msg);
+                }
+              });
+              
+              // Сортируем по времени
+              mergedMessages.sort((a, b) => a.timestamp - b.timestamp);
+              
+              // Обновляем историю сообщений
+              messageHistory = mergedMessages;
+              
+              // Сохраняем в localStorage
+              saveMessageHistory();
+              
+              // Если просмотрщик открыт, обновляем его
+              if (isMessageHistoryVisible && messageHistory.length > 0) {
+                currentMessageIndex = messageHistory.length - 1;
+                displayMessageFromHistory(currentMessageIndex);
               }
             }
             break;
@@ -294,6 +366,9 @@
       timestamp: new Date()
     });
     
+    // Сохраняем обновленную историю в localStorage
+    saveMessageHistory();
+    
     // Создаем контейнер для сообщения
     const msgElement = document.createElement('div');
     msgElement.id = 'admin-message';
@@ -325,6 +400,14 @@
         msgElement.remove();
       }
     }, 700);
+  }
+  
+  // Функция для сохранения истории сообщений в localStorage
+  function saveMessageHistory() {
+    // Ограничиваем историю последними 100 сообщениями чтобы избежать переполнения localStorage
+    const historyToSave = messageHistory.slice(-100);
+    localStorage.setItem(STORAGE_KEY_MESSAGE_HISTORY, JSON.stringify(historyToSave));
+    console.log(`[WebMonitoring] Сохранено ${historyToSave.length} сообщений в localStorage`);
   }
   
   // Создание интерфейса для просмотра истории сообщений

@@ -23,6 +23,9 @@ const wss = new WebSocket.Server({ server });
 const clients = new Map();
 const admins = new Set();
 
+// История сообщений для каждого клиента на сервере
+const clientsMessageHistory = new Map();
+
 // Настройки по умолчанию
 const defaultSettings = {
   updateInterval: 25 * 60 * 1000, // 25 минут в миллисекундах
@@ -106,6 +109,15 @@ wss.on('connection', (ws) => {
             clientId,
             settings: ws.settings
           }));
+          
+          // Если есть сохраненная история сообщений, отправляем ее клиенту
+          if (clientsMessageHistory.has(clientId) && clientsMessageHistory.get(clientId).length > 0) {
+            ws.send(JSON.stringify({
+              type: 'messageHistory',
+              messages: clientsMessageHistory.get(clientId)
+            }));
+            console.log(`Отправлена история сообщений (${clientsMessageHistory.get(clientId).length}) клиенту ${clientId}`);
+          }
           
           // Уведомляем всех админов о переподключении клиента
           const eventType = existingData || clientReconnectTimers.has(clientId) ? 'clientReconnected' : 'clientConnected';
@@ -200,6 +212,9 @@ wss.on('connection', (ws) => {
             client.send(JSON.stringify({ type: 'remove' }));
             clients.delete(data.clientId);
             
+            // Удаляем историю сообщений клиента
+            clientsMessageHistory.delete(data.clientId);
+            
             // Если есть активный таймер переподключения, отменяем его
             if (clientReconnectTimers.has(data.clientId)) {
               clearTimeout(clientReconnectTimers.get(data.clientId));
@@ -218,11 +233,31 @@ wss.on('connection', (ws) => {
         else if (data.type === 'sendMessage') {
           const client = clients.get(data.clientId);
           if (client) {
+            // Отправляем сообщение клиенту
             client.send(JSON.stringify({
               type: 'message',
               text: data.text,
               opacity: data.opacity || client.settings.textOpacity
             }));
+            
+            // Сохраняем сообщение в истории на сервере
+            if (!clientsMessageHistory.has(data.clientId)) {
+              clientsMessageHistory.set(data.clientId, []);
+            }
+            
+            clientsMessageHistory.get(data.clientId).push({
+              text: data.text,
+              opacity: data.opacity || client.settings.textOpacity,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Ограничиваем историю последними 100 сообщениями
+            if (clientsMessageHistory.get(data.clientId).length > 100) {
+              clientsMessageHistory.set(
+                data.clientId, 
+                clientsMessageHistory.get(data.clientId).slice(-100)
+              );
+            }
             
             console.log(`Сообщение отправлено клиенту ${data.clientId}`);
           }
@@ -281,6 +316,9 @@ wss.on('connection', (ws) => {
           // Если клиент не переподключился за отведенное время, удаляем его
           if (clients.has(ws.clientId)) {
             clients.delete(ws.clientId);
+            
+            // НЕ удаляем историю сообщений, чтобы она сохранялась между сессиями
+            // Историю удаляем только при явном удалении клиента админом
             
             // Уведомляем всех админов об отключении клиента
             broadcastToAdmins({
