@@ -114,7 +114,6 @@
             } else if (window.external && ('AddFavorite' in window.external)) { // IE
                 window.external.AddFavorite(bookmarkletCode, bookmarkName);
             } else { // Chrome, Safari и другие
-                alert('Перетащите эту кнопку на панель закладок или нажмите Ctrl+D (Cmd+D на Mac)');
                 tempLink.style.display = 'inline-block';
                 tempLink.className = 'btn';
                 tempLink.draggable = true;
@@ -132,7 +131,6 @@
             const codeTextarea = document.getElementById('bookmarkletCode');
             codeTextarea.select();
             document.execCommand('copy');
-            alert('Код скопирован!');
         }
     </script>
 </body>
