@@ -74,17 +74,27 @@
       font-weight: bold;
     }
     
-    .header-right {
+    .nav-links {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
     
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .nav-link {
       font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .nav-link.active {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
     }
     
     .logout-btn {
@@ -643,10 +653,14 @@
     <div class="header-content">
       <div class="logo">
         <div class="logo-icon">M</div>
-        <div>
-          Система мониторинга веб-страниц
-        </div>
+        <span>Web Monitoring</span>
       </div>
+      
+      <div class="nav-links">
+        <a href="/admin" class="nav-link active">Мониторинг</a>
+        <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
+      </div>
+      
       <div class="header-right">
         <div id="connection-status">Подключение...</div>
         <a href="/api/logout" class="logout-btn">Выйти</a>

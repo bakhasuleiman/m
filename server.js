@@ -26,6 +26,40 @@ const ADMIN_PASSWORD_HASH = hashPassword(ADMIN_PASSWORD, SALT);
 // Хранилище для активных сессий
 const activeSessions = new Map();
 
+// Хранилище для уникальных кодов доступа
+const accessCodes = new Map();
+// Функция для генерации случайного 3-символьного кода
+function generateAccessCode() {
+  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let code = '';
+  for (let i = 0; i < 3; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    code += characters[randomIndex];
+  }
+  return code;
+}
+
+// Функция для проверки уникальности кода
+function isCodeUnique(code) {
+  return !accessCodes.has(code);
+}
+
+// Функция для создания нового кода доступа
+function createAccessCode() {
+  let code;
+  do {
+    code = generateAccessCode();
+  } while (!isCodeUnique(code));
+  
+  accessCodes.set(code, {
+    active: true,
+    created: new Date().toISOString(),
+    lastUsed: null,
+    useCount: 0
+  });
+  return code;
+}
+
 // Настройка Express
 const app = express();
 // Включаем CORS для всех запросов
@@ -80,6 +114,79 @@ const port = process.env.PORT || 3000;
 
 // Статические файлы
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Обработчик для уникальных кодов доступа
+app.get('/:code([a-z0-9]{3})', (req, res) => {
+  const code = req.params.code;
+  
+  // Проверяем существование и активность кода
+  if (accessCodes.has(code) && accessCodes.get(code).active) {
+    // Обновляем статистику использования
+    const codeData = accessCodes.get(code);
+    codeData.lastUsed = new Date().toISOString();
+    codeData.useCount++;
+    accessCodes.set(code, codeData);
+    
+    // Перенаправляем на loader.js
+    res.redirect('/loader.js');
+  } else {
+    // Код не существует или не активен
+    res.status(404).send('Недействительная ссылка');
+  }
+});
+
+// Страница управления кодами доступа (защищена аутентификацией)
+app.get('/admin/access-codes', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'access-codes.html'));
+});
+
+// API для управления кодами доступа
+// Получение всех кодов
+app.get('/api/access-codes', requireAuth, (req, res) => {
+  const codesArray = Array.from(accessCodes.entries()).map(([code, data]) => ({
+    code,
+    ...data
+  }));
+  
+  res.json(codesArray);
+});
+
+// Создание нового кода
+app.post('/api/access-codes', requireAuth, (req, res) => {
+  const code = createAccessCode();
+  res.json({
+    code,
+    ...accessCodes.get(code)
+  });
+});
+
+// Деактивация/активация кода
+app.put('/api/access-codes/:code', requireAuth, (req, res) => {
+  const code = req.params.code;
+  if (!accessCodes.has(code)) {
+    return res.status(404).json({ error: 'Код не найден' });
+  }
+  
+  const codeData = accessCodes.get(code);
+  codeData.active = req.body.active;
+  accessCodes.set(code, codeData);
+  
+  res.json({
+    code,
+    ...codeData
+  });
+});
+
+// Удаление кода
+app.delete('/api/access-codes/:code', requireAuth, (req, res) => {
+  const code = req.params.code;
+  if (!accessCodes.has(code)) {
+    return res.status(404).json({ error: 'Код не найден' });
+  }
+  
+  accessCodes.delete(code);
+  res.json({ success: true });
+});
 
 // Настройка WebSocket сервера
 const wss = new WebSocket.Server({ server });
