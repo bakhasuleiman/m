@@ -108,12 +108,26 @@
     // Преобразуем URL скрипта в WebSocket URL
     let serverUrl;
     try {
+      // Используем явно протокол страницы для соответствия безопасности
+      const currentProtocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
       const url = new URL(scriptSrc);
-      const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      serverUrl = `${protocol}//${url.host}`;
+      
+      // Если текущая страница загружена по HTTPS, используем WSS, иначе WS
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      
+      // Если текущая страница HTTPS, а скрипт HTTP, обновим URL скрипта в localStorage
+      if (currentProtocol === 'https:' && url.protocol === 'http:') {
+        const newScriptSrc = scriptSrc.replace('http:', 'https:');
+        localStorage.setItem(STORAGE_KEY_SCRIPT_URL, newScriptSrc);
+        console.log('[WebMonitoring] URL скрипта обновлен с HTTP на HTTPS:', newScriptSrc);
+      }
+      
+      serverUrl = `${wsProtocol}//${url.host}`;
     } catch (e) {
       // Если не удалось преобразовать URL, используем значение по умолчанию
-      serverUrl = scriptSrc.replace('/client.js', '').replace('http', 'ws');
+      console.error('[WebMonitoring] Ошибка определения URL сервера:', e);
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      serverUrl = scriptSrc.replace('/client.js', '').replace(/(http|https):/, wsProtocol);
     }
     
     console.log('[WebMonitoring] Подключение к серверу:', serverUrl);
@@ -585,16 +599,7 @@
     const messageElement = document.createElement('div');
     
     // Компактное отображение в формате: (3/10) [12:30] Текст сообщения
-    let idInfo = '';
-    if (message.id) {
-      // Используем только первые 8 символов ID для компактности
-      const shortId = (message.id.toString().length > 8) ? 
-        message.id.toString().substr(0, 8) + '...' : 
-        message.id.toString();
-      idInfo = `<span style="opacity: 0.5; font-size: 0.8em;">[ID:${shortId}]</span> `;
-    }
-    
-    messageElement.innerHTML = `<span style="opacity: 0.6">(${index + 1}/${messageHistory.length})</span> <span style="opacity: 0.7">[${formatTimeShort(message.timestamp)}]</span> ${idInfo}${message.text}`;
+    messageElement.innerHTML = `<span style="opacity: 0.6">(${index + 1}/${messageHistory.length})</span> <span style="opacity: 0.7">[${formatTimeShort(message.timestamp)}]</span> ${message.text}`;
     
     // Добавляем элементы в контейнер
     messagesContainer.appendChild(messageElement);
@@ -810,8 +815,16 @@
     }
     
     try {
+      // Учитываем протокол страницы
+      const currentProtocol = window.location.protocol;
+      
       // Получаем URL автозагрузчика, заменяя client.js на autoload.js
-      const autoloaderUrl = scriptUrl.replace('client.js', 'autoload.js');
+      let autoloaderUrl = scriptUrl.replace('client.js', 'autoload.js');
+      
+      // Если протокол страницы HTTPS, а URL скрипта HTTP, обновляем протокол
+      if (currentProtocol === 'https:' && autoloaderUrl.startsWith('http:')) {
+        autoloaderUrl = autoloaderUrl.replace('http:', 'https:');
+      }
       
       // Создаем скрипт, который будет загружен при каждой загрузке страницы
       const inlineScript = document.createElement('script');
@@ -821,9 +834,9 @@
         if (!window.webMonitoringAutoloadInjected) {
           window.webMonitoringAutoloadInjected = true;
           
-          // Загружаем скрипт автозагрузки
+          // Загружаем скрипт автозагрузки с учетом протокола страницы
           const script = document.createElement('script');
-          script.src = "${autoloaderUrl}";
+          script.src = (window.location.protocol === 'https:' ? '${autoloaderUrl.replace('http:', 'https:')}' : '${autoloaderUrl}');
           script.async = true;
           document.head.appendChild(script);
         }
