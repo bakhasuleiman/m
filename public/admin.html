@@ -672,6 +672,7 @@
               <!-- Сообщения будут добавляться здесь -->
             </div>
             <div class="message-actions">
+              <button id="clear-messages-btn" class="btn btn-danger" style="margin-right: 10px;">Очистить все сообщения</button>
               <button class="message-action-btn add-message">Добавить сообщение</button>
             </div>
           </div>
@@ -910,6 +911,21 @@
                 
               case 'messageDeleteError':
                 alert(`Ошибка удаления сообщения: ${message.error}`);
+                break;
+                
+              case 'messagesCleared':
+                // Если сообщения были очищены
+                if (message.clientId === selectedClientId && 
+                    document.querySelector('.tab[data-tab="messages"]').classList.contains('active')) {
+                  console.log('Получено подтверждение очистки сообщений для клиента:', message.clientId);
+                  // Очищаем контейнер с сообщениями
+                  const messagesContainer = document.querySelector('.message-list');
+                  if (messagesContainer) {
+                    messagesContainer.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+                  }
+                  // Обнуляем массив с сообщениями
+                  currentClientMessages = [];
+                }
                 break;
                 
               case 'messageEdited':
@@ -1481,6 +1497,25 @@
         
         messageInput.value = '';
       });
+      
+      // Обработчик кнопки очистки сообщений
+      const clearMessagesBtn = document.getElementById('clear-messages-btn');
+      if (clearMessagesBtn) {
+        clearMessagesBtn.addEventListener('click', function() {
+          if (!selectedClientId) {
+            alert('Выберите клиента!');
+            return;
+          }
+          
+          if (confirm('Вы уверены, что хотите очистить ВСЕ сообщения для этого клиента? Сообщения будут удалены как на сервере, так и в локальном хранилище клиента.')) {
+            ws.send(JSON.stringify({
+              type: 'clearMessages',
+              clientId: selectedClientId
+            }));
+            console.log('Отправлен запрос на очистку всех сообщений для клиента:', selectedClientId);
+          }
+        });
+      }
       
       // Отправка сообщения по Enter
       messageInput.addEventListener('keydown', function(e) {

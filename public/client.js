@@ -224,6 +224,19 @@
             displayMessage(message.text, message.opacity);
             break;
             
+          case 'clearMessages':
+            // Очищаем историю сообщений
+            messageHistory = [];
+            // Удаляем сохраненную историю из localStorage
+            localStorage.removeItem(STORAGE_KEY_MESSAGE_HISTORY);
+            console.log('[WebMonitoring] История сообщений очищена по команде с сервера');
+            
+            // Скрываем просмотрщик, если он открыт
+            if (isMessageHistoryVisible) {
+              hideMessageHistory();
+            }
+            break;
+            
           case 'settingsUpdate':
             if (message.settings) {
               settings = message.settings;

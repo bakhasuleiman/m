@@ -455,6 +455,39 @@ wss.on('connection', (ws) => {
             console.log('Обновлены глобальные настройки по умолчанию');
           }
         }
+        else if (data.type === 'clearMessages') {
+          // Запрос на очистку сообщений клиента
+          const clientId = data.clientId;
+          
+          console.log(`Получен запрос на очистку всех сообщений для клиента ${clientId}`);
+          
+          // Очищаем историю сообщений на сервере
+          if (clientsMessageHistory.has(clientId)) {
+            clientsMessageHistory.set(clientId, []);
+            console.log(`История сообщений для клиента ${clientId} очищена на сервере`);
+          }
+          
+          // Отправляем клиенту команду очистить историю сообщений в localStorage
+          const client = clients.get(clientId);
+          if (client) {
+            client.send(JSON.stringify({
+              type: 'clearMessages'
+            }));
+            console.log(`Команда на очистку сообщений отправлена клиенту ${clientId}`);
+          }
+          
+          // Отправляем подтверждение админу
+          ws.send(JSON.stringify({
+            type: 'messagesCleared',
+            clientId
+          }));
+          
+          // Уведомляем всех админов об очистке
+          broadcastToAdmins({
+            type: 'messagesCleared',
+            clientId
+          });
+        }
       }
     } catch (e) {
       console.error(`Ошибка при обработке сообщения: ${e.message}`);
