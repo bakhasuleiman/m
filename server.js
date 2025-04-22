@@ -231,45 +231,70 @@ wss.on('connection', (ws) => {
           }
         }
         else if (data.type === 'sendMessage') {
-          const client = clients.get(data.clientId);
+          // Отправка сообщения клиенту
+          const clientId = data.clientId;
+          const messageText = data.text;
+          const opacity = data.opacity !== undefined ? data.opacity : 1;
+          
+          console.log(`Получен запрос на отправку сообщения клиенту ${clientId}: "${messageText}" с прозрачностью ${opacity}`);
+          
+          const client = clients.get(clientId);
+          
           if (client) {
+            // Генерируем уникальный ID для сообщения
+            const messageId = uuidv4();
+            const timestamp = new Date().toISOString();
+            
             // Отправляем сообщение клиенту
             client.send(JSON.stringify({
               type: 'message',
-              text: data.text,
-              opacity: data.opacity || client.settings.textOpacity
+              text: messageText,
+              opacity: opacity
             }));
             
-            // Сохраняем сообщение в истории на сервере
-            if (!clientsMessageHistory.has(data.clientId)) {
-              clientsMessageHistory.set(data.clientId, []);
+            console.log(`Сообщение отправлено клиенту ${clientId}`);
+            
+            // Сохраняем сообщение в историю
+            if (!clientsMessageHistory.has(clientId)) {
+              clientsMessageHistory.set(clientId, []);
+              console.log(`Создана новая история сообщений для клиента ${clientId}`);
             }
             
-            const messageId = uuidv4(); // Генерируем уникальный ID для сообщения
-            
-            clientsMessageHistory.get(data.clientId).push({
-              id: messageId, // Добавляем ID сообщения для редактирования
-              text: data.text,
-              opacity: data.opacity || client.settings.textOpacity,
-              timestamp: new Date().toISOString()
+            const messages = clientsMessageHistory.get(clientId);
+            messages.push({
+              id: messageId,
+              text: messageText,
+              opacity: opacity,
+              timestamp: timestamp
             });
             
-            // Ограничиваем историю последними 100 сообщениями
-            if (clientsMessageHistory.get(data.clientId).length > 100) {
-              clientsMessageHistory.set(
-                data.clientId, 
-                clientsMessageHistory.get(data.clientId).slice(-100)
-              );
-            }
+            console.log(`Сообщение сохранено в историю клиента ${clientId}, всего сообщений: ${messages.length}`);
             
-            console.log(`Сообщение отправлено клиенту ${data.clientId}`);
+            // Отправляем подтверждение админу
+            ws.send(JSON.stringify({
+              type: 'messageSent',
+              clientId: clientId,
+              messageId: messageId
+            }));
+          } else {
+            // Клиент не найден
+            console.log(`Клиент ${clientId} не найден, сообщение не отправлено`);
+            ws.send(JSON.stringify({
+              type: 'messageError',
+              error: 'Клиент не найден или не подключен'
+            }));
           }
         }
         else if (data.type === 'getMessageHistory') {
           // Запрос на получение истории сообщений для клиента
           const clientId = data.clientId;
           
+          console.log(`Получен запрос истории сообщений для клиента ${clientId}`);
+          
           if (clientsMessageHistory.has(clientId)) {
+            const messages = clientsMessageHistory.get(clientId);
+            console.log(`Найдена история сообщений для ${clientId}: ${messages.length} сообщений`);
+            
             ws.send(JSON.stringify({
               type: 'adminMessageHistory',
               clientId: clientId,
@@ -277,6 +302,7 @@ wss.on('connection', (ws) => {
             }));
             console.log(`Отправлена история сообщений админу для клиента ${clientId}`);
           } else {
+            console.log(`История сообщений для клиента ${clientId} не найдена, отправляем пустой массив`);
             ws.send(JSON.stringify({
               type: 'adminMessageHistory',
               clientId: clientId,

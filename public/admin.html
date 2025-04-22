@@ -712,6 +712,9 @@
   </main>
   
   <script>
+    // Глобальная переменная для WebSocket соединения
+    let ws = null;
+    
     document.addEventListener('DOMContentLoaded', function() {
       // Элементы интерфейса
       const connectionStatus = document.getElementById('connection-status');
@@ -739,7 +742,6 @@
       // Состояние приложения
       let clients = [];
       let selectedClientId = null;
-      let ws = null;
       let reconnectAttempts = 0;
       let interactivityEnabled = false;
       let currentPreviewMode = 'static';
@@ -996,6 +998,7 @@
       
       // Выбор клиента
       function selectClient(clientId) {
+        console.log('Выбран клиент:', clientId);
         selectedClientId = clientId;
         
         // Обновляем активный класс в списке
@@ -1012,7 +1015,9 @@
         }
         
         // Загружаем историю сообщений, если активна вкладка messages
-        if (document.querySelector('.tab[data-tab="messages"]').classList.contains('active')) {
+        const messagesTab = document.querySelector('.tab[data-tab="messages"]');
+        if (messagesTab && messagesTab.classList.contains('active')) {
+          console.log('Вкладка сообщений активна, запрашиваем историю');
           loadMessageHistory(clientId);
         }
         
@@ -1418,6 +1423,7 @@
           
           // Если переключились на вкладку сообщений и есть выбранный клиент, загружаем историю
           if (tabName === 'messages' && selectedClientId) {
+            console.log('Переключились на вкладку сообщений, запрашиваем историю для', selectedClientId);
             loadMessageHistory(selectedClientId);
           }
         }
@@ -1515,8 +1521,10 @@
 
     // Функция загрузки истории сообщений
     function loadMessageHistory(clientId) {
+      console.log('Запрос истории сообщений для клиента:', clientId);
+      
       if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket не подключен');
+        console.error('WebSocket не подключен, состояние:', ws ? ws.readyState : 'нет соединения');
         return;
       }
       
@@ -1525,17 +1533,49 @@
         type: 'getMessageHistory',
         clientId: clientId
       }));
+      console.log('Запрос истории отправлен на сервер');
     }
     
     // Функция отображения истории сообщений
     function displayMessageHistory(messages) {
-      const messagesContainer = document.querySelector('.message-list');
+      console.log('Получены сообщения для отображения:', messages);
+      
+      // Найдем или создадим контейнер для сообщений
+      let messagesContainer = document.querySelector('.message-list');
+      
+      // Если контейнер не найден, создаем его
+      if (!messagesContainer) {
+        console.log('Контейнер .message-list не найден в DOM, создаем...');
+        
+        // Находим вкладку сообщений
+        const messagesTab = document.getElementById('messages-tab');
+        if (!messagesTab) {
+          console.error('Вкладка сообщений #messages-tab не найдена');
+          return;
+        }
+        
+        // Создаем контейнер сообщений
+        messagesContainer = document.createElement('div');
+        messagesContainer.className = 'message-list';
+        
+        // Если есть контейнер для сообщений, добавляем в него
+        const historyContainer = document.querySelector('.message-history-container');
+        if (historyContainer) {
+          historyContainer.appendChild(messagesContainer);
+        } else {
+          // Иначе добавляем прямо во вкладку
+          messagesTab.appendChild(messagesContainer);
+        }
+        
+        console.log('Контейнер .message-list создан');
+      }
       
       // Очищаем контейнер
       messagesContainer.innerHTML = '';
       
       // Если сообщений нет, показываем заглушку
       if (!messages || messages.length === 0) {
+        console.log('Нет сообщений для отображения');
         messagesContainer.innerHTML = '<div class="empty-state">Нет сообщений</div>';
         return;
       }
@@ -1544,6 +1584,8 @@
       const sortedMessages = [...messages].sort((a, b) => 
         new Date(b.timestamp) - new Date(a.timestamp)
       );
+      
+      console.log('Отсортировано сообщений:', sortedMessages.length);
       
       // Добавляем сообщения в контейнер
       sortedMessages.forEach(message => {
