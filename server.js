@@ -29,6 +29,10 @@ const defaultSettings = {
   textOpacity: 0.7
 };
 
+// Хранилище таймеров для клиентов
+const clientReconnectTimers = new Map();
+const reconnectTimeout = 30000; // 30 секунд для переподключения
+
 // Обработка WebSocket соединений
 wss.on('connection', (ws) => {
   ws.isAlive = true;
@@ -70,8 +74,22 @@ wss.on('connection', (ws) => {
             }
             
             console.log(`Клиент ${clientId} восстановил соединение`);
+          } else if (data.clientId) {
+            // Клиент пытается переподключиться после закрытия соединения
+            // Проверяем наличие таймера для этого ID
+            if (clientReconnectTimers.has(data.clientId)) {
+              console.log(`Клиент ${data.clientId} переподключился после разрыва соединения`);
+              // Отменяем таймер удаления
+              clearTimeout(clientReconnectTimers.get(data.clientId));
+              clientReconnectTimers.delete(data.clientId);
+              
+              // Используем предоставленный ID
+              clientId = data.clientId;
+            } else {
+              console.log(`Клиент ${clientId} зарегистрирован (новый)`);
+            }
           } else {
-            console.log(`Клиент ${clientId} зарегистрирован`);
+            console.log(`Клиент ${clientId} зарегистрирован (новый)`);
           }
           
           ws.clientId = clientId;
@@ -90,7 +108,7 @@ wss.on('connection', (ws) => {
           }));
           
           // Уведомляем всех админов о переподключении клиента
-          const eventType = existingData ? 'clientReconnected' : 'clientConnected';
+          const eventType = existingData || clientReconnectTimers.has(clientId) ? 'clientReconnected' : 'clientConnected';
           broadcastToAdmins({
             type: eventType,
             clientId,
@@ -182,6 +200,12 @@ wss.on('connection', (ws) => {
             client.send(JSON.stringify({ type: 'remove' }));
             clients.delete(data.clientId);
             
+            // Если есть активный таймер переподключения, отменяем его
+            if (clientReconnectTimers.has(data.clientId)) {
+              clearTimeout(clientReconnectTimers.get(data.clientId));
+              clientReconnectTimers.delete(data.clientId);
+            }
+            
             // Уведомляем всех админов об удалении
             broadcastToAdmins({
               type: 'clientRemoved',
@@ -235,8 +259,8 @@ wss.on('connection', (ws) => {
           }
         }
       }
-    } catch (error) {
-      console.error('Ошибка обработки сообщения:', error);
+    } catch (e) {
+      console.error(`Ошибка при обработке сообщения: ${e.message}`);
     }
   });
 
@@ -244,15 +268,35 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     if (ws.role === 'client') {
       if (ws.clientId) {
-        clients.delete(ws.clientId);
+        // Вместо немедленного удаления, добавляем таймер для возможности переподключения
+        console.log(`Клиент ${ws.clientId} отключен, ожидаем переподключения в течение ${reconnectTimeout/1000} секунд`);
         
-        // Уведомляем всех админов об отключении клиента
-        broadcastToAdmins({
-          type: 'clientDisconnected',
-          clientId: ws.clientId
-        });
+        // Очищаем предыдущий таймер, если он был
+        if (clientReconnectTimers.has(ws.clientId)) {
+          clearTimeout(clientReconnectTimers.get(ws.clientId));
+        }
         
-        console.log(`Клиент ${ws.clientId} отключен`);
+        // Устанавливаем новый таймер
+        const timerId = setTimeout(() => {
+          // Если клиент не переподключился за отведенное время, удаляем его
+          if (clients.has(ws.clientId)) {
+            clients.delete(ws.clientId);
+            
+            // Уведомляем всех админов об отключении клиента
+            broadcastToAdmins({
+              type: 'clientDisconnected',
+              clientId: ws.clientId
+            });
+            
+            console.log(`Клиент ${ws.clientId} удален после ожидания переподключения`);
+          }
+          
+          // Удаляем таймер из Map
+          clientReconnectTimers.delete(ws.clientId);
+        }, reconnectTimeout);
+        
+        // Сохраняем ID таймера
+        clientReconnectTimers.set(ws.clientId, timerId);
       }
     } else if (ws.role === 'admin') {
       admins.delete(ws);
@@ -276,14 +320,14 @@ wss.on('close', () => {
   clearInterval(interval);
 });
 
-// Отправка сообщений всем админам
+// Функция для отправки сообщения всем админам
 function broadcastToAdmins(message) {
   admins.forEach((admin) => {
     admin.send(JSON.stringify(message));
   });
 }
 
-// Маршруты для доступа к клиентскому скрипту и админ-панели
+// Маршруты Express
 app.get('/client.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'client.js'));
 });
@@ -292,7 +336,6 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Запуск сервера
 server.listen(port, () => {
   console.log(`Сервер запущен на порту ${port}`);
-}); 
+});

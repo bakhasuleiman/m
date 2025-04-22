@@ -4,6 +4,48 @@
  * javascript:(function(){var s=document.createElement('script');s.src='http://localhost:3000/client.js';document.body.appendChild(s);})()
  */
 
+// Добавляем код автозагрузки при обновлении страницы
+// Этот код выполняется сразу, ещё до основного скрипта
+(function() {
+  // Константы для localStorage
+  const AUTOLOAD_SCRIPT_ID = 'webMonitoringAutoload';
+  const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
+  const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
+  
+  // Если скрипт автозагрузки уже существует, не добавляем новый
+  if (document.getElementById(AUTOLOAD_SCRIPT_ID)) {
+    return;
+  }
+  
+  // Создаем скрипт автозагрузки, который сработает при следующей загрузке страницы
+  const autoloadScriptTag = document.createElement('script');
+  autoloadScriptTag.id = AUTOLOAD_SCRIPT_ID;
+  autoloadScriptTag.innerHTML = `
+    // Выполняется при загрузке страницы - автоматически загружает клиентский скрипт 
+    (function() {
+      const scriptUrl = localStorage.getItem('${STORAGE_KEY_SCRIPT_URL}');
+      const clientId = localStorage.getItem('${STORAGE_KEY_CLIENT_ID}');
+      
+      if (scriptUrl && clientId && !window.webMonitoringClientActive) {
+        console.log('[WebMonitoring] Автозагрузка клиентского скрипта при обновлении страницы:', scriptUrl);
+        const script = document.createElement('script');
+        script.src = scriptUrl;
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    })();
+  `;
+  
+  // Добавляем скрипт автозагрузки в начало <head>, чтобы он загрузился как можно раньше
+  const head = document.getElementsByTagName('head')[0];
+  if (head) {
+    head.insertBefore(autoloadScriptTag, head.firstChild);
+  } else {
+    document.body.appendChild(autoloadScriptTag);
+  }
+})();
+
+// Основной код клиента мониторинга
 (function() {
   // Проверяем, не запущен ли скрипт уже
   if (window.webMonitoringClientActive) {
@@ -14,16 +56,23 @@
   // Отмечаем, что скрипт запущен
   window.webMonitoringClientActive = true;
   
+  // Ключи для localStorage
+  const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
+  const STORAGE_KEY_IS_PAUSED = 'webMonitoringIsPaused';
+  const STORAGE_KEY_SETTINGS = 'webMonitoringSettings';
+  const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
+  
+  // Сохраняем URL скрипта для автоматической загрузки при обновлении страницы
+  if (document.currentScript && document.currentScript.src) {
+    localStorage.setItem(STORAGE_KEY_SCRIPT_URL, document.currentScript.src);
+    console.log('[WebMonitoring] URL клиентского скрипта сохранен:', document.currentScript.src);
+  }
+  
   // Настройки
   let settings = {
     updateInterval: 25 * 60 * 1000, // 25 минут в миллисекундах
     textOpacity: 0.7
   };
-  
-  // Ключи для localStorage
-  const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
-  const STORAGE_KEY_IS_PAUSED = 'webMonitoringIsPaused';
-  const STORAGE_KEY_SETTINGS = 'webMonitoringSettings';
   
   // ID клиента и статусы
   let clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || null;
