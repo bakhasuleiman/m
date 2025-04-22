@@ -90,249 +90,17 @@
     }
   }
   
-  // Объявление переменных для управления просмотрщиком сообщений
-  let messageViewerPosition = { x: 50, y: 50 };
-  let messageViewerFontSize = 14;
-  let messageViewerOpacity = 0.8;
-  let messageViewer = null;
   let isMessageHistoryVisible = false;
-  let currentMessageIndex = 0;
-  let isDragging = false;
-  let dragStartX, dragStartY, dragInitialX, dragInitialY;
+  let currentMessageIndex = -1;
+  let messageHistoryContainer = null;
+  let messageViewerPosition = { x: 10, y: 10 };
+  let messageViewerFontSize = 12;
+  let messageViewerOpacity = 0.8;
   let showInstructions = true; // Флаг для отображения/скрытия инструкций
   
-  // Инициализация отслеживания жеста мышью
-  const mouseGestureDetection = {
-    points: [],
-    isTracking: false,
-    minPoints: 20, // Минимальное количество точек для распознавания жеста
-    minDistance: 50, // Минимальное расстояние между точками для формирования треугольника
-    maxPoints: 100 // Максимальное количество точек для отслеживания
-  };
-
-  // Функция для определения расстояния между двумя точками
-  function distance(p1, p2) {
-    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-  }
-
-  // Функция для определения площади треугольника
-  function triangleArea(p1, p2, p3) {
-    return Math.abs((p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)) / 2);
-  }
-
-  // Функция для определения, формируют ли точки треугольник
-  function isTriangleGesture(points) {
-    if (points.length < mouseGestureDetection.minPoints) return false;
-    
-    // Найдем три наиболее удаленные друг от друга точки
-    let maxDistance = 0;
-    let pointA = 0, pointB = 0;
-    
-    // Находим две наиболее удаленные точки
-    for (let i = 0; i < points.length; i++) {
-      for (let j = i + 1; j < points.length; j++) {
-        const dist = distance(points[i], points[j]);
-        if (dist > maxDistance) {
-          maxDistance = dist;
-          pointA = i;
-          pointB = j;
-        }
-      }
-    }
-    
-    // Если расстояние слишком маленькое, это не треугольник
-    if (maxDistance < mouseGestureDetection.minDistance) return false;
-    
-    // Найдем третью точку, которая образует треугольник с наибольшей площадью
-    let maxArea = 0;
-    let pointC = -1;
-    
-    for (let i = 0; i < points.length; i++) {
-      if (i !== pointA && i !== pointB) {
-        const area = triangleArea(points[pointA], points[pointB], points[i]);
-        if (area > maxArea) {
-          maxArea = area;
-          pointC = i;
-        }
-      }
-    }
-    
-    // Если площадь слишком маленькая, это не треугольник
-    return pointC !== -1 && maxArea > 500;
-  }
-
-  // Инициализация отслеживания движения мыши
-  let lastRightClick = 0;
-  const doubleClickThreshold = 300; // Порог для определения двойного клика (мс)
-  
-  document.addEventListener('mousedown', function(e) {
-    // Начинаем отслеживать только при нажатии правой кнопки мыши
-    if (e.button === 2) {
-      const now = Date.now();
-      
-      // Проверяем, был ли это двойной щелчок правой кнопкой мыши
-      if (now - lastRightClick < doubleClickThreshold) {
-        // Показываем просмотрщик сообщений при двойном щелчке
-        showMessageHistory();
-        
-        // Устанавливаем позицию просмотрщика в месте клика
-        messageViewerPosition = {
-          x: e.clientX - 150,
-          y: e.clientY - 50
-        };
-        updateMessageViewerPosition();
-        
-        // Сбрасываем таймер
-        lastRightClick = 0;
-      } else {
-        // Обычное поведение для одиночного щелчка - отслеживание жеста
-        mouseGestureDetection.isTracking = true;
-        mouseGestureDetection.points = [{x: e.clientX, y: e.clientY}];
-        lastRightClick = now;
-      }
-      
-      e.preventDefault();
-    }
-  });
-
-  document.addEventListener('mousemove', function(e) {
-    if (mouseGestureDetection.isTracking) {
-      mouseGestureDetection.points.push({x: e.clientX, y: e.clientY});
-      
-      // Ограничиваем количество точек
-      if (mouseGestureDetection.points.length > mouseGestureDetection.maxPoints) {
-        mouseGestureDetection.points.shift();
-      }
-    }
-  });
-
-  document.addEventListener('mouseup', function(e) {
-    if (mouseGestureDetection.isTracking) {
-      mouseGestureDetection.isTracking = false;
-      
-      // Проверяем, образует ли жест треугольник
-      if (isTriangleGesture(mouseGestureDetection.points)) {
-        // Показываем просмотрщик сообщений
-        showMessageHistory();
-        
-        // Устанавливаем позицию просмотрщика в месте окончания жеста
-        messageViewerPosition = {
-          x: e.clientX - 150,
-          y: e.clientY - 50
-        };
-        updateMessageViewerPosition();
-      }
-      
-      // Очищаем точки
-      mouseGestureDetection.points = [];
-    }
-  });
-
-  // Отключаем стандартное контекстное меню для правой кнопки мыши
-  document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-  });
-
-  // Функция для отображения окна истории сообщений
-  function showMessageHistory() {
-    if (messageHistory.length === 0) {
-      return; // Если нет сообщений, ничего не делаем
-    }
-    
-    // Создаем просмотрщик сообщений, если он еще не создан
-    if (!messageViewer) {
-      messageViewer = createMessageViewer();
-    }
-    
-    messageViewer.style.display = 'block';
-    isMessageHistoryVisible = true;
-    
-    // Показываем последнее сообщение
-    currentMessageIndex = messageHistory.length - 1;
-    displayMessageFromHistory(currentMessageIndex);
-  }
-  
-  // Функция для создания просмотрщика сообщений
-  function createMessageViewer() {
-    // Если просмотрщик уже существует, возвращаем его
-    if (messageViewer) {
-      return messageViewer;
-    }
-    
-    // Создаем элемент для просмотрщика
-    const viewer = document.createElement('div');
-    viewer.className = 'message-viewer';
-    viewer.style.position = 'fixed';
-    viewer.style.left = `${messageViewerPosition.x}px`;
-    viewer.style.top = `${messageViewerPosition.y}px`;
-    viewer.style.width = '300px';
-    viewer.style.backgroundColor = `rgba(0, 0, 0, ${messageViewerOpacity})`;
-    viewer.style.color = 'white';
-    viewer.style.padding = '10px';
-    viewer.style.borderRadius = '5px';
-    viewer.style.zIndex = '9999';
-    viewer.style.userSelect = 'none';
-    viewer.style.display = 'none';
-    
-    // Создаем счетчик сообщений
-    const counter = document.createElement('div');
-    counter.className = 'message-counter';
-    counter.style.fontSize = '10px';
-    counter.style.opacity = '0.7';
-    counter.style.marginBottom = '5px';
-    
-    // Создаем контейнер для содержимого сообщения
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    content.style.fontSize = `${messageViewerFontSize}px`;
-    content.style.whiteSpace = 'pre-wrap';
-    content.style.wordBreak = 'break-word';
-    
-    // Создаем информацию о горячих клавишах
-    const hotkeys = document.createElement('div');
-    hotkeys.className = 'message-hotkeys';
-    hotkeys.style.fontSize = '10px';
-    hotkeys.style.opacity = '0.5';
-    hotkeys.style.marginTop = '10px';
-    hotkeys.textContent = '← → - навигация | колесо мыши - навигация | +/- - размер | ↑/↓ - прозрачность | Esc - закрыть | ПКМ2 - открыть/закрыть';
-    
-    // Добавляем все элементы в просмотрщик
-    viewer.appendChild(counter);
-    viewer.appendChild(content);
-    viewer.appendChild(hotkeys);
-    
-    // Добавляем возможность перетаскивания
-    viewer.addEventListener('mousedown', startDrag);
-    
-    // Добавляем обработчик для колеса мыши
-    viewer.addEventListener('wheel', function(e) {
-      if (isMessageHistoryVisible) {
-        e.preventDefault();
-        
-        if (e.deltaY > 0) {
-          // Прокрутка вниз - следующее сообщение
-          if (currentMessageIndex < messageHistory.length - 1) {
-            currentMessageIndex++;
-            displayMessageFromHistory(currentMessageIndex);
-          }
-        } else {
-          // Прокрутка вверх - предыдущее сообщение
-          if (currentMessageIndex > 0) {
-            currentMessageIndex--;
-            displayMessageFromHistory(currentMessageIndex);
-          }
-        }
-      }
-    });
-    
-    // Добавляем просмотрщик на страницу
-    document.body.appendChild(viewer);
-    
-    // Сохраняем ссылку на просмотрщик
-    messageViewer = viewer;
-    
-    return viewer;
-  }
+  // Переменные для отслеживания кликов мыши
+  let mouseClicks = [];
+  let mouseClickTimeout = null;
   
   // Подключение к серверу
   function connectToServer() {
@@ -690,17 +458,155 @@
     console.log(`[WebMonitoring] Сохранено ${historyToSave.length} сообщений в localStorage`);
   }
   
-  // Функция для отображения конкретного сообщения из истории
-  function displayMessageFromHistory(index) {
-    if (!messageViewer || index < 0 || index >= messageHistory.length) {
+  // Создание интерфейса для просмотра истории сообщений
+  function createMessageHistoryInterface() {
+    // Если контейнер уже существует, просто показываем его
+    if (messageHistoryContainer) {
+      // Обновляем видимость инструкций
+      const instructionsElement = messageHistoryContainer.querySelector('.instructions-container');
+      if (instructionsElement) {
+        instructionsElement.style.display = showInstructions ? 'block' : 'none';
+      }
+      
+      messageHistoryContainer.style.display = 'block';
+      // Применяем текущие настройки
+      updateMessageViewerPosition();
+      updateMessageViewerFontSize();
+      updateMessageViewerOpacity();
       return;
     }
     
-    const message = messageHistory[index];
-    const totalMessages = messageHistory.length;
+    // Создаем контейнер для истории сообщений
+    messageHistoryContainer = document.createElement('div');
+    messageHistoryContainer.id = 'message-history-container';
     
-    messageViewer.querySelector('.message-content').textContent = message;
-    messageViewer.querySelector('.message-counter').textContent = `${index + 1}/${totalMessages}`;
+    // Стилизуем контейнер (прозрачный без теней, компактный)
+    Object.assign(messageHistoryContainer.style, {
+      position: 'fixed',
+      left: messageViewerPosition.x + 'px',
+      bottom: messageViewerPosition.y + 'px',
+      width: 'auto',
+      maxWidth: '250px',
+      backgroundColor: 'transparent',
+      boxShadow: 'none',
+      padding: '5px',
+      zIndex: '1000000',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: 'Arial, sans-serif'
+    });
+    
+    // Создаем контейнер для сообщений
+    const messagesContainer = document.createElement('div');
+    messagesContainer.id = 'messages-list';
+    Object.assign(messagesContainer.style, {
+      overflow: 'hidden',
+      fontSize: messageViewerFontSize + 'px',
+      color: '#aaa', // Светло-серый цвет
+      opacity: messageViewerOpacity
+    });
+    
+    // Создаем панель с инструкциями (более компактная)
+    const instructions = document.createElement('div');
+    instructions.className = 'instructions-container';
+    instructions.style.display = showInstructions ? 'block' : 'none';
+    Object.assign(instructions.style, {
+      marginTop: '2px',
+      textAlign: 'left'
+    });
+    
+    const instructionsText = document.createElement('div');
+    instructionsText.innerText = 'Alt+Q: вкл/выкл | ←→: листать | []: размер | Shift+9/0: прозрачность | Alt+↑↓←→: перемещение';
+    Object.assign(instructionsText.style, {
+      fontSize: (messageViewerFontSize - 2) + 'px',
+      color: '#aaa',
+      marginTop: '5px',
+      opacity: messageViewerOpacity
+    });
+    
+    instructions.appendChild(instructionsText);
+    
+    // Добавляем элементы в контейнер
+    messageHistoryContainer.appendChild(messagesContainer);
+    messageHistoryContainer.appendChild(instructions);
+    
+    // Добавляем контейнер в DOM
+    document.body.appendChild(messageHistoryContainer);
+  }
+  
+  // Обновление позиции просмотрщика сообщений
+  function updateMessageViewerPosition() {
+    if (messageHistoryContainer) {
+      messageHistoryContainer.style.left = messageViewerPosition.x + 'px';
+      messageHistoryContainer.style.bottom = messageViewerPosition.y + 'px';
+    }
+  }
+  
+  // Обновление размера шрифта просмотрщика сообщений
+  function updateMessageViewerFontSize() {
+    if (!messageHistoryContainer) return;
+    
+    console.log('Обновление размера шрифта до:', messageViewerFontSize + 'px');
+    
+    // Обновляем размер шрифта в контейнере сообщений
+    const messagesContainer = document.getElementById('messages-list');
+    if (messagesContainer) {
+      messagesContainer.style.fontSize = messageViewerFontSize + 'px';
+    }
+    
+    // Обновляем размер шрифта в инструкциях (более надежный способ)
+    const instructions = messageHistoryContainer.querySelector('div div');
+    if (instructions) {
+      instructions.style.fontSize = (messageViewerFontSize - 2) + 'px';
+    }
+    
+    // Перерисовываем текущее сообщение для обновления стилей
+    if (currentMessageIndex >= 0) {
+      displayMessageFromHistory(currentMessageIndex);
+    }
+  }
+  
+  // Обновление прозрачности просмотрщика сообщений
+  function updateMessageViewerOpacity() {
+    if (!messageHistoryContainer) return;
+    
+    console.log('Обновление прозрачности до:', messageViewerOpacity);
+    
+    // Обновляем прозрачность в контейнере сообщений
+    const messagesContainer = document.getElementById('messages-list');
+    if (messagesContainer) {
+      messagesContainer.style.opacity = messageViewerOpacity;
+    }
+    
+    // Обновляем прозрачность в инструкциях (более надежный способ)
+    const instructions = messageHistoryContainer.querySelector('div div');
+    if (instructions) {
+      instructions.style.opacity = messageViewerOpacity;
+    }
+  }
+  
+  // Отображение сообщения из истории
+  function displayMessageFromHistory(index) {
+    if (index < 0 || index >= messageHistory.length) return;
+    
+    currentMessageIndex = index;
+    const messagesContainer = document.getElementById('messages-list');
+    if (!messagesContainer) return;
+    
+    // Очищаем контейнер
+    messagesContainer.innerHTML = '';
+    
+    // Получаем сообщение
+    const message = messageHistory[index];
+    
+    // Создаем компактный элемент для отображения сообщения
+    const messageElement = document.createElement('div');
+    
+    // Компактное отображение в формате: (3/10) [12:30] Текст сообщения
+    messageElement.innerHTML = `<span style="opacity: 0.6">(${index + 1}/${messageHistory.length})</span> <span style="opacity: 0.7">[${formatTimeShort(message.timestamp)}]</span> ${message.text}`;
+    
+    // Добавляем элементы в контейнер
+    messagesContainer.appendChild(messageElement);
   }
   
   // Компактное форматирование времени (только часы:минуты)
@@ -715,34 +621,139 @@
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   }
   
+  // Показать историю сообщений
+  function showMessageHistory(withInstructions = true) {
+    isMessageHistoryVisible = true;
+    showInstructions = withInstructions;
+    createMessageHistoryInterface();
+    
+    // Показываем последнее сообщение если есть
+    if (messageHistory.length > 0) {
+      currentMessageIndex = messageHistory.length - 1;
+      displayMessageFromHistory(currentMessageIndex);
+    } else {
+      const messagesContainer = document.getElementById('messages-list');
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '<div style="text-align: center;">Нет сообщений</div>';
+      }
+    }
+  }
+  
   // Скрыть историю сообщений
   function hideMessageHistory() {
-    if (messageViewer) {
-      messageViewer.style.display = 'none';
-      isMessageHistoryVisible = false;
+    isMessageHistoryVisible = false;
+    if (messageHistoryContainer) {
+      messageHistoryContainer.style.display = 'none';
     }
   }
   
-  // Обновление позиции просмотрщика сообщений
-  function updateMessageViewerPosition() {
-    if (messageViewer) {
-      messageViewer.style.left = messageViewerPosition.x + 'px';
-      messageViewer.style.top = messageViewerPosition.y + 'px';
-    }
+  // Функция для определения, образуют ли три точки треугольник
+  function isTriangle(points) {
+    if (points.length !== 3) return false;
+    
+    // Вычисляем площадь треугольника
+    const area = Math.abs(
+      (points[0].x * (points[1].y - points[2].y) + 
+       points[1].x * (points[2].y - points[0].y) + 
+       points[2].x * (points[0].y - points[1].y)) / 2
+    );
+    
+    // Проверяем, что площадь больше минимального значения (избегаем почти прямых линий)
+    return area > 200;
   }
   
-  // Обновление размера шрифта просмотрщика сообщений
-  function updateMessageViewerFontSize() {
-    if (messageViewer) {
-      messageViewer.querySelector('.message-content').style.fontSize = `${messageViewerFontSize}px`;
-    }
-  }
-  
-  // Обновление прозрачности просмотрщика сообщений
-  function updateMessageViewerOpacity() {
-    if (messageViewer) {
-      messageViewer.style.backgroundColor = `rgba(0, 0, 0, ${messageViewerOpacity})`;
-    }
+  // Инициализация обработчиков событий для мыши
+  function initMouseHandlers() {
+    // Обработчик клика мыши
+    document.addEventListener('click', function(event) {
+      // Если просмотрщик открыт и клик не внутри него, закрываем его
+      if (isMessageHistoryVisible && messageHistoryContainer) {
+        const rect = messageHistoryContainer.getBoundingClientRect();
+        if (!(event.clientX >= rect.left && 
+              event.clientX <= rect.right && 
+              event.clientY >= rect.top && 
+              event.clientY <= rect.bottom)) {
+          hideMessageHistory();
+          return;
+        }
+      }
+      
+      // Иначе отслеживаем клики для паттерна треугольника
+      mouseClicks.push({x: event.clientX, y: event.clientY});
+      
+      // Ограничиваем количество отслеживаемых кликов
+      if (mouseClicks.length > 3) {
+        mouseClicks.shift();
+      }
+      
+      // Очищаем предыдущий таймер
+      if (mouseClickTimeout) {
+        clearTimeout(mouseClickTimeout);
+      }
+      
+      // Устанавливаем новый таймер для сброса последовательности кликов через 2 секунды
+      mouseClickTimeout = setTimeout(() => {
+        mouseClicks = [];
+      }, 2000);
+      
+      // Проверяем, формируют ли клики треугольник
+      if (mouseClicks.length === 3 && isTriangle(mouseClicks)) {
+        // Сбрасываем клики
+        mouseClicks = [];
+        
+        // Открываем просмотрщик сообщений
+        if (!isMessageHistoryVisible) {
+          showMessageHistory(false); // без инструкций
+        }
+      }
+    });
+    
+    // Обработчик колесика мыши над просмотрщиком
+    document.addEventListener('wheel', function(event) {
+      if (isMessageHistoryVisible && messageHistoryContainer) {
+        const rect = messageHistoryContainer.getBoundingClientRect();
+        
+        // Проверяем, находится ли курсор над просмотрщиком
+        if (event.clientX >= rect.left && 
+            event.clientX <= rect.right && 
+            event.clientY >= rect.top && 
+            event.clientY <= rect.bottom) {
+          
+          event.preventDefault();
+          
+          // Листаем историю сообщений
+          if (event.deltaY < 0) {
+            // Вверх - предыдущее сообщение
+            if (currentMessageIndex > 0) {
+              displayMessageFromHistory(currentMessageIndex - 1);
+            }
+          } else {
+            // Вниз - следующее сообщение
+            if (currentMessageIndex < messageHistory.length - 1) {
+              displayMessageFromHistory(currentMessageIndex + 1);
+            }
+          }
+        }
+      }
+    }, { passive: false });
+    
+    // Обработчик клика внутри просмотрщика для его закрытия
+    document.addEventListener('mousedown', function(event) {
+      if (isMessageHistoryVisible && messageHistoryContainer) {
+        const rect = messageHistoryContainer.getBoundingClientRect();
+        
+        // Если левый клик и внутри просмотрщика
+        if (event.button === 0 && 
+            event.clientX >= rect.left && 
+            event.clientX <= rect.right && 
+            event.clientY >= rect.top && 
+            event.clientY <= rect.bottom) {
+          
+          event.preventDefault();
+          hideMessageHistory();
+        }
+      }
+    });
   }
   
   // Эмуляция базового функционала jQuery
@@ -775,6 +786,9 @@
     
     window.$ = window.jQuery;
   }
+  
+  // Добавляем обработчик нажатия клавиш
+  document.addEventListener('keydown', handleKeyDown);
   
   // Инициализация системы мониторинга
   function initMonitoring() {
@@ -809,6 +823,9 @@
   
   // Запускаем инициализацию системы мониторинга
   initMonitoring();
+  
+  // Инициализируем обработчики событий мыши
+  initMouseHandlers();
 
   // Функция для внедрения автозагрузчика в страницу
   function injectAutoloader(scriptUrl) {
@@ -861,110 +878,98 @@
   }
 
   // Обработчик нажатия клавиш
-  document.addEventListener('keydown', function(event) {
-    // Если просмотрщик сообщений отображается
+  function handleKeyDown(event) {
+    console.log('Нажата клавиша:', event.code, event.key, 'Alt:', event.altKey, 'Shift:', event.shiftKey);
+    
+    // Alt+Q для показа/скрытия истории сообщений с инструкциями
+    if (event.altKey && (event.code === 'KeyQ' || event.key === 'q' || event.key === 'Q' || event.key === 'й' || event.key === 'Й')) {
+      event.preventDefault();
+      if (isMessageHistoryVisible) {
+        hideMessageHistory();
+      } else {
+        showMessageHistory(true); // показать с инструкциями
+      }
+      return;
+    }
+    
+    // Alt+W для показа/скрытия истории сообщений без инструкций
+    if (event.altKey && (event.code === 'KeyW' || event.key === 'w' || event.key === 'W' || event.key === 'ц' || event.key === 'Ц')) {
+      event.preventDefault();
+      if (isMessageHistoryVisible) {
+        hideMessageHistory();
+      } else {
+        showMessageHistory(false); // показать без инструкций
+      }
+      return;
+    }
+    
+    // Если история сообщений видима, обрабатываем дополнительные команды
     if (isMessageHistoryVisible) {
-      // Навигация по сообщениям с помощью стрелок
-      if (event.key === 'ArrowLeft') {
+      // Листание сообщений стрелками
+      if (!event.altKey && (event.code === 'ArrowLeft' || event.key === 'ArrowLeft')) {
         event.preventDefault();
         if (currentMessageIndex > 0) {
-          currentMessageIndex--;
-          displayMessageFromHistory(currentMessageIndex);
+          displayMessageFromHistory(currentMessageIndex - 1);
         }
-      } else if (event.key === 'ArrowRight') {
+      } else if (!event.altKey && (event.code === 'ArrowRight' || event.key === 'ArrowRight')) {
         event.preventDefault();
         if (currentMessageIndex < messageHistory.length - 1) {
-          currentMessageIndex++;
-          displayMessageFromHistory(currentMessageIndex);
+          displayMessageFromHistory(currentMessageIndex + 1);
         }
       }
-      
-      // Изменение размера шрифта
-      else if (event.key === '+' || event.key === '=') {
+      // Изменение размера шрифта через [ и ]
+      else if (event.code === 'BracketLeft' || event.key === '[') {
         event.preventDefault();
-        if (messageViewerFontSize < 24) {
-          messageViewerFontSize += 1;
-          updateMessageViewerFontSize();
-        }
-      } else if (event.key === '-' || event.key === '_') {
-        event.preventDefault();
+        console.log('Уменьшение размера шрифта');
         if (messageViewerFontSize > 8) {
           messageViewerFontSize -= 1;
           updateMessageViewerFontSize();
         }
-      }
-      
-      // Изменение прозрачности
-      else if (event.key === 'ArrowUp') {
+      } else if (event.code === 'BracketRight' || event.key === ']') {
         event.preventDefault();
-        if (messageViewerOpacity < 1.0) {
-          messageViewerOpacity = Math.min(1.0, messageViewerOpacity + 0.1);
-          updateMessageViewerOpacity();
+        console.log('Увеличение размера шрифта');
+        if (messageViewerFontSize < 24) {
+          messageViewerFontSize += 1;
+          updateMessageViewerFontSize();
         }
-      } else if (event.key === 'ArrowDown') {
+      } 
+      // Изменение прозрачности через Shift+9 и Shift+0
+      else if (event.shiftKey && (event.code === 'Digit9' || event.key === '(')) {
         event.preventDefault();
+        console.log('Уменьшение прозрачности');
         if (messageViewerOpacity > 0.1) {
-          messageViewerOpacity = Math.max(0.1, messageViewerOpacity - 0.1);
+          messageViewerOpacity = Math.round((messageViewerOpacity - 0.1) * 10) / 10; // Округляем для точности
           updateMessageViewerOpacity();
         }
-      }
-      
-      // Закрытие просмотрщика клавишей Escape
-      else if (event.key === 'Escape') {
+      } else if (event.shiftKey && (event.code === 'Digit0' || event.key === ')')) {
+        event.preventDefault();
+        console.log('Увеличение прозрачности');
+        if (messageViewerOpacity < 1.0) {
+          messageViewerOpacity = Math.round((messageViewerOpacity + 0.1) * 10) / 10; // Округляем для точности
+          updateMessageViewerOpacity();
+        }
+      } 
+      // Перемещение просмотрщика с помощью Alt+стрелки
+      else if (event.altKey && (event.code === 'ArrowUp' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        messageViewerPosition.y += 10;
+        updateMessageViewerPosition();
+      } else if (event.altKey && (event.code === 'ArrowDown' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        messageViewerPosition.y -= 10;
+        updateMessageViewerPosition();
+      } else if (event.altKey && (event.code === 'ArrowLeft' || event.key === 'ArrowLeft')) {
+        event.preventDefault();
+        messageViewerPosition.x -= 10;
+        updateMessageViewerPosition();
+      } else if (event.altKey && (event.code === 'ArrowRight' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        messageViewerPosition.x += 10;
+        updateMessageViewerPosition();
+      } else if (event.code === 'Escape' || event.key === 'Escape') {
         event.preventDefault();
         hideMessageHistory();
       }
     }
-  });
-
-  // Функция начала перетаскивания
-  function startDrag(e) {
-    // Только левая кнопка мыши
-    if (e.button !== 0) return;
-    
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    dragInitialX = messageViewerPosition.x;
-    dragInitialY = messageViewerPosition.y;
-    
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', stopDrag);
-    
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  
-  // Функция перетаскивания
-  function drag(e) {
-    if (!isDragging) return;
-    
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    
-    messageViewerPosition = {
-      x: dragInitialX + dx,
-      y: dragInitialY + dy
-    };
-    
-    updateMessageViewerPosition();
-    
-    e.preventDefault();
-  }
-  
-  // Функция окончания перетаскивания
-  function stopDrag(e) {
-    if (!isDragging) return;
-    
-    isDragging = false;
-    document.removeEventListener('mousemove', drag);
-    document.removeEventListener('mouseup', stopDrag);
-    
-    // Если это был только клик без перетаскивания, скрываем просмотрщик
-    if (Math.abs(e.clientX - dragStartX) < 5 && Math.abs(e.clientY - dragStartY) < 5) {
-      hideMessageHistory();
-    }
-    
-    e.preventDefault();
   }
 })(); 
