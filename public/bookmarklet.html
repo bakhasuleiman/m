@@ -60,6 +60,11 @@
             margin-top: 15px;
             text-align: center;
         }
+        .test-links {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +85,14 @@
             <li>Создайте новую закладку и вставьте код в поле URL</li>
             <li>Назовите закладку "Google"</li>
         </ol>
+        
+        <div class="test-links">
+            <h3>Тестирование и отладка:</h3>
+            <ul>
+                <li><a href="/test-autoload.html" class="btn">Страница для тестирования автозагрузки</a></li>
+                <li><a href="#" id="testBookmarklet" class="btn">Протестировать букмарклет на этой странице</a></li>
+            </ul>
+        </div>
     </div>
     
     <div class="footer">
@@ -124,6 +137,13 @@
                     }, 1000);
                 });
             }
+        });
+        
+        // Тестирование букмарклета на этой странице
+        document.getElementById('testBookmarklet').addEventListener('click', function(e) {
+            e.preventDefault();
+            // Используем новую функцию для динамического импорта
+            eval(bookmarkletCode.replace('javascript:', ''));
         });
         
         // Функция для копирования кода

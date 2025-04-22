@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест автозагрузки клиента</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #4046e5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3035c0;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #e2eafc;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тест автозагрузки клиента мониторинга</h1>
+        <p>Эта страница позволяет проверить автоматическую загрузку клиента после обновления страницы.</p>
+        
+        <div>
+            <button id="loadClient">Загрузить клиента</button>
+            <button id="reloadPage">Обновить страницу</button>
+            <button id="clearStorage">Очистить localStorage</button>
+            <button id="showStorage">Показать содержимое localStorage</button>
+        </div>
+        
+        <div id="status" class="info">
+            Статус клиента: <span id="clientStatus">Не загружен</span>
+        </div>
+        
+        <div id="storageInfo" style="margin-top: 20px; display: none;">
+            <h3>Содержимое localStorage:</h3>
+            <pre id="storageContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Функция проверки статуса клиента
+        function checkClientStatus() {
+            const statusContainer = document.getElementById('status');
+            const statusText = document.getElementById('clientStatus');
+            
+            if (window.webMonitoringClientActive) {
+                statusContainer.className = 'success';
+                statusText.textContent = 'Активен';
+            } else {
+                statusContainer.className = 'info';
+                statusText.textContent = 'Не загружен';
+            }
+        }
+        
+        // Загрузка клиента
+        document.getElementById('loadClient').addEventListener('click', function() {
+            if (!window.webMonitoringClientActive) {
+                const script = document.createElement('script');
+                script.src = '/client.js';
+                script.onload = function() {
+                    checkClientStatus();
+                };
+                document.body.appendChild(script);
+            } else {
+                alert('Клиент уже загружен!');
+            }
+        });
+        
+        // Обновление страницы
+        document.getElementById('reloadPage').addEventListener('click', function() {
+            location.reload();
+        });
+        
+        // Очистка localStorage
+        document.getElementById('clearStorage').addEventListener('click', function() {
+            localStorage.removeItem('webMonitoringClientId');
+            localStorage.removeItem('webMonitoringIsPaused');
+            localStorage.removeItem('webMonitoringSettings');
+            localStorage.removeItem('webMonitoringScriptUrl');
+            localStorage.removeItem('webMonitoringMessageHistory');
+            localStorage.removeItem('webMonitoringAutoload');
+            
+            alert('localStorage очищен');
+            checkClientStatus();
+        });
+        
+        // Показать содержимое localStorage
+        document.getElementById('showStorage').addEventListener('click', function() {
+            const storageInfo = document.getElementById('storageInfo');
+            const storageContent = document.getElementById('storageContent');
+            
+            if (storageInfo.style.display === 'none') {
+                // Собираем все ключи, связанные с мониторингом
+                const storageData = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('webMonitoring')) {
+                        try {
+                            // Пробуем распарсить JSON, если возможно
+                            storageData[key] = JSON.parse(localStorage.getItem(key));
+                        } catch (e) {
+                            // Иначе просто показываем как строку
+                            storageData[key] = localStorage.getItem(key);
+                        }
+                    }
+                }
+                
+                storageContent.textContent = JSON.stringify(storageData, null, 2);
+                storageInfo.style.display = 'block';
+            } else {
+                storageInfo.style.display = 'none';
+            }
+        });
+        
+        // Проверяем статус при загрузке страницы
+        window.addEventListener('load', function() {
+            setTimeout(checkClientStatus, 500); // Небольшая задержка для инициализации
+        });
+    </script>
+</body>
+</html> 

@@ -4,45 +4,39 @@
  * javascript:(function(){var s=document.createElement('script');s.src='http://localhost:3000/client.js';document.body.appendChild(s);})()
  */
 
-// Добавляем код автозагрузки при обновлении страницы
-// Этот код выполняется сразу, ещё до основного скрипта
+// Добавляем автозагрузку при обновлении страницы
 (function() {
   // Константы для localStorage
-  const AUTOLOAD_SCRIPT_ID = 'webMonitoringAutoload';
   const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
   const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
+  const STORAGE_KEY_AUTOLOAD = 'webMonitoringAutoload';
   
-  // Если скрипт автозагрузки уже существует, не добавляем новый
-  if (document.getElementById(AUTOLOAD_SCRIPT_ID)) {
-    return;
+  // Проверяем, установлен ли флаг автозагрузки
+  if (localStorage.getItem(STORAGE_KEY_AUTOLOAD) !== 'true') {
+    // Если это первый запуск (букмарклет), устанавливаем флаг
+    localStorage.setItem(STORAGE_KEY_AUTOLOAD, 'true');
+    console.log('[WebMonitoring] Включен режим автозагрузки');
   }
   
-  // Создаем скрипт автозагрузки, который сработает при следующей загрузке страницы
-  const autoloadScriptTag = document.createElement('script');
-  autoloadScriptTag.id = AUTOLOAD_SCRIPT_ID;
-  autoloadScriptTag.innerHTML = `
-    // Выполняется при загрузке страницы - автоматически загружает клиентский скрипт 
-    (function() {
-      const scriptUrl = localStorage.getItem('${STORAGE_KEY_SCRIPT_URL}');
-      const clientId = localStorage.getItem('${STORAGE_KEY_CLIENT_ID}');
-      
-      if (scriptUrl && clientId && !window.webMonitoringClientActive) {
-        console.log('[WebMonitoring] Автозагрузка клиентского скрипта при обновлении страницы:', scriptUrl);
+  // Устанавливаем обработчик события для автозагрузки
+  window.addEventListener('load', function() {
+    // Проверяем в localStorage наличие флага автозагрузки и ID клиента
+    if (localStorage.getItem(STORAGE_KEY_AUTOLOAD) === 'true' && 
+        localStorage.getItem(STORAGE_KEY_CLIENT_ID) && 
+        !window.webMonitoringClientActive) {
+      // Получаем URL скрипта из localStorage
+      const scriptUrl = localStorage.getItem(STORAGE_KEY_SCRIPT_URL);
+      if (scriptUrl) {
+        console.log('[WebMonitoring] Автоматическая загрузка скрипта:', scriptUrl);
+        
+        // Создаем и добавляем скрипт
         const script = document.createElement('script');
         script.src = scriptUrl;
         script.async = true;
         document.body.appendChild(script);
       }
-    })();
-  `;
-  
-  // Добавляем скрипт автозагрузки в начало <head>, чтобы он загрузился как можно раньше
-  const head = document.getElementsByTagName('head')[0];
-  if (head) {
-    head.insertBefore(autoloadScriptTag, head.firstChild);
-  } else {
-    document.body.appendChild(autoloadScriptTag);
-  }
+    }
+  });
 })();
 
 // Основной код клиента мониторинга
@@ -62,12 +56,16 @@
   const STORAGE_KEY_SETTINGS = 'webMonitoringSettings';
   const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
   const STORAGE_KEY_MESSAGE_HISTORY = 'webMonitoringMessageHistory';
+  const STORAGE_KEY_AUTOLOAD = 'webMonitoringAutoload';
   
   // Сохраняем URL скрипта для автоматической загрузки при обновлении страницы
   if (document.currentScript && document.currentScript.src) {
     localStorage.setItem(STORAGE_KEY_SCRIPT_URL, document.currentScript.src);
     console.log('[WebMonitoring] URL клиентского скрипта сохранен:', document.currentScript.src);
   }
+
+  // Устанавливаем флаг автозагрузки
+  localStorage.setItem(STORAGE_KEY_AUTOLOAD, 'true');
   
   // Настройки
   let settings = {
