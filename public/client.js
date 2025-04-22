@@ -4,41 +4,7 @@
  * javascript:(function(){var s=document.createElement('script');s.src='http://localhost:3000/client.js';document.body.appendChild(s);})()
  */
 
-// Добавляем автозагрузку при обновлении страницы
-(function() {
-  // Константы для localStorage
-  const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
-  const STORAGE_KEY_SCRIPT_URL = 'webMonitoringScriptUrl';
-  const STORAGE_KEY_AUTOLOAD = 'webMonitoringAutoload';
-  
-  // Проверяем, установлен ли флаг автозагрузки
-  if (localStorage.getItem(STORAGE_KEY_AUTOLOAD) !== 'true') {
-    // Если это первый запуск (букмарклет), устанавливаем флаг
-    localStorage.setItem(STORAGE_KEY_AUTOLOAD, 'true');
-    console.log('[WebMonitoring] Включен режим автозагрузки');
-  }
-  
-  // Устанавливаем обработчик события для автозагрузки
-  window.addEventListener('load', function() {
-    // Проверяем в localStorage наличие флага автозагрузки и ID клиента
-    if (localStorage.getItem(STORAGE_KEY_AUTOLOAD) === 'true' && 
-        localStorage.getItem(STORAGE_KEY_CLIENT_ID) && 
-        !window.webMonitoringClientActive) {
-      // Получаем URL скрипта из localStorage
-      const scriptUrl = localStorage.getItem(STORAGE_KEY_SCRIPT_URL);
-      if (scriptUrl) {
-        console.log('[WebMonitoring] Автоматическая загрузка скрипта:', scriptUrl);
-        
-        // Создаем и добавляем скрипт
-        const script = document.createElement('script');
-        script.src = scriptUrl;
-        script.async = true;
-        document.body.appendChild(script);
-      }
-    }
-  });
-})();
-
+// Убираем предыдущий код автозагрузки, теперь он находится в loader.js
 // Основной код клиента мониторинга
 (function() {
   // Проверяем, не запущен ли скрипт уже
@@ -90,6 +56,23 @@
     }
   }
   
+  // Регистрация в Service Worker, если он активен
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    // Отправляем сообщение активному Service Worker
+    navigator.serviceWorker.controller.postMessage({
+      type: 'REGISTER_CLIENT',
+      clientId: clientId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Обработка сообщений от Service Worker
+    navigator.serviceWorker.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'SW_REGISTERED') {
+        console.log('[WebMonitoring] Клиент зарегистрирован в Service Worker:', event.data.timestamp);
+      }
+    });
+  }
+  
   // История сообщений
   let messageHistory = [];
   
@@ -115,20 +98,34 @@
   // Подключение к серверу
   function connectToServer() {
     // Определяем хост сервера динамически на основе текущего скрипта
-    const scriptSrc = document.currentScript ? document.currentScript.src : 'http://localhost:3000/client.js';
-    const serverUrl = scriptSrc.replace('/client.js', '').replace('http', 'ws');
+    const scriptSrc = document.currentScript 
+      ? document.currentScript.src 
+      : localStorage.getItem(STORAGE_KEY_SCRIPT_URL) || 'http://localhost:3000/client.js';
+    
+    // Преобразуем URL скрипта в WebSocket URL
+    let serverUrl;
+    try {
+      const url = new URL(scriptSrc);
+      const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      serverUrl = `${protocol}//${url.host}`;
+    } catch (e) {
+      // Если не удалось преобразовать URL, используем значение по умолчанию
+      serverUrl = scriptSrc.replace('/client.js', '').replace('http', 'ws');
+    }
+    
+    console.log('[WebMonitoring] Подключение к серверу:', serverUrl);
     
     ws = new WebSocket(serverUrl);
     
     ws.onopen = function() {
-      console.log('Подключение к серверу установлено');
+      console.log('[WebMonitoring] Подключение к серверу установлено');
       reconnectAttempts = 0;
       
-      // Регистрируемся на сервере
+      // Регистрируемся на сервере (отправляем clientId, если он сохранен)
       ws.send(JSON.stringify({
         type: 'register',
         role: 'client',
-        clientId: clientId // Отправляем существующий clientId, если есть
+        clientId: clientId
       }));
     };
     
