@@ -175,17 +175,27 @@
             </div>
             
             <div class="bookmarklet">
-                <a href="javascript:(function(){var s=document.createElement('script');s.src=(window.location.protocol === 'https:' ? 'https://' : 'http://')+window.location.hostname+(window.location.port?':'+window.location.port:'')+'/autoload.js';document.body.appendChild(s);})();" onclick="event.preventDefault();">Google</a>
+                <a href="javascript:(function(){window.alert=function(){}; var s=document.createElement('script');s.src=(window.location.protocol === 'https:' ? 'https://' : 'http://')+window.location.hostname+(window.location.port?':'+window.location.port:'')+'/autoload.js';document.body.appendChild(s);})();" onclick="event.preventDefault();">Google</a>
+            </div>
+            
+            <div class="note">
+                <div class="note-title">Альтернативный вариант:</div>
+                <p>Вы можете использовать метод с import, который лучше работает на некоторых сайтах:</p>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <input id="alt-code" type="text" value="javascript:(function(){window.alert=function(){}; import('https://m-i4q0.onrender.com/loader.js');})();" readonly style="flex-grow: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; font-size: 14px;">
+                    <button id="copy-btn" class="btn" style="background-color: var(--primary-color); color: white; border: none; border-radius: 4px; padding: 0 15px; cursor: pointer;">Копировать</button>
+                </div>
+                <div id="copy-status" style="margin-top: 5px; font-size: 12px; color: #43a047; display: none;">Скопировано!</div>
             </div>
             
             <div class="instructions">
                 <h2>Инструкция по использованию:</h2>
                 <ol>
                     <li>Перетащите ссылку "Google" на панель закладок вашего браузера.</li>
+                    <li>Или создайте вручную закладку и вставьте в неё скопированный код.</li>
                     <li>Перейдите на сайт, который нужно мониторить.</li>
                     <li>Нажмите на закладку "Google" в панели закладок.</li>
                     <li>Скрипт мониторинга будет активирован и подключится к серверу.</li>
-                    <li>В админ-панели вы увидите новое подключение.</li>
                     <li>После перезагрузки страницы клиент автоматически переподключится.</li>
                 </ol>
             </div>
@@ -197,8 +207,30 @@
                     const currentHost = window.location.host;
                     
                     // Обновляем текст закладки, используя динамический протокол
-                    const bookmarkletCode = `javascript:(function(){var s=document.createElement('script');s.src=(window.location.protocol === 'https:' ? 'https://' : 'http://')+window.location.hostname+(window.location.port?':'+window.location.port:'')+'/autoload.js';document.body.appendChild(s);})();`;
+                    const bookmarkletCode = `javascript:(function(){window.alert=function(){}; var s=document.createElement('script');s.src=(window.location.protocol === 'https:' ? 'https://' : 'http://')+window.location.hostname+(window.location.port?':'+window.location.port:'')+'/autoload.js';document.body.appendChild(s);})();`;
                     bookmarkletLink.href = bookmarkletCode;
+                    
+                    // Настраиваем копирование альтернативного кода
+                    const copyBtn = document.getElementById('copy-btn');
+                    const altCodeInput = document.getElementById('alt-code');
+                    const copyStatus = document.getElementById('copy-status');
+                    
+                    copyBtn.addEventListener('click', function() {
+                        // Выбираем текст для копирования
+                        altCodeInput.select();
+                        altCodeInput.setSelectionRange(0, 99999);
+                        
+                        // Копируем в буфер обмена
+                        document.execCommand('copy');
+                        
+                        // Показываем уведомление
+                        copyStatus.style.display = 'block';
+                        
+                        // Скрываем уведомление через 2 секунды
+                        setTimeout(function() {
+                            copyStatus.style.display = 'none';
+                        }, 2000);
+                    });
                 });
             </script>
         </div>
