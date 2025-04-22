@@ -20,12 +20,27 @@
     textOpacity: 0.7
   };
   
+  // Ключи для localStorage
+  const STORAGE_KEY_CLIENT_ID = 'webMonitoringClientId';
+  const STORAGE_KEY_IS_PAUSED = 'webMonitoringIsPaused';
+  const STORAGE_KEY_SETTINGS = 'webMonitoringSettings';
+  
   // ID клиента и статусы
-  let clientId = null;
-  let isPaused = false;
+  let clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || null;
+  let isPaused = localStorage.getItem(STORAGE_KEY_IS_PAUSED) === 'true';
   let updateTimer = null;
   let reconnectAttempts = 0;
   let ws = null;
+  
+  // Восстанавливаем настройки из localStorage, если есть
+  const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+  if (savedSettings) {
+    try {
+      settings = JSON.parse(savedSettings);
+    } catch (e) {
+      console.error('Ошибка при восстановлении настроек:', e);
+    }
+  }
   
   // История сообщений
   let messageHistory = [];
@@ -52,7 +67,8 @@
       // Регистрируемся на сервере
       ws.send(JSON.stringify({
         type: 'register',
-        role: 'client'
+        role: 'client',
+        clientId: clientId // Отправляем существующий clientId, если есть
       }));
     };
     
@@ -63,10 +79,14 @@
         switch (message.type) {
           case 'registered':
             clientId = message.clientId;
+            // Сохраняем clientId в localStorage
+            localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId);
             
             // Применяем полученные от сервера настройки
             if (message.settings) {
               settings = message.settings;
+              // Сохраняем настройки в localStorage
+              localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
             }
             
             console.log(`Зарегистрирован как клиент: ${clientId}`);
@@ -77,12 +97,16 @@
             
           case 'pause':
             isPaused = true;
+            // Сохраняем состояние в localStorage
+            localStorage.setItem(STORAGE_KEY_IS_PAUSED, 'true');
             stopDataCollection();
             console.log('Сбор данных приостановлен');
             break;
             
           case 'resume':
             isPaused = false;
+            // Сохраняем состояние в localStorage
+            localStorage.setItem(STORAGE_KEY_IS_PAUSED, 'false');
             startDataCollection();
             console.log('Сбор данных возобновлен');
             break;
@@ -91,6 +115,10 @@
             stopDataCollection();
             disconnectFromServer();
             window.webMonitoringClientActive = false;
+            // Удаляем все данные из localStorage
+            localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
+            localStorage.removeItem(STORAGE_KEY_IS_PAUSED);
+            localStorage.removeItem(STORAGE_KEY_SETTINGS);
             console.log('Клиент удален');
             break;
             
@@ -101,6 +129,8 @@
           case 'settingsUpdate':
             if (message.settings) {
               settings = message.settings;
+              // Сохраняем настройки в localStorage
+              localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
               console.log('Настройки обновлены', settings);
               
               // Перезапускаем сбор данных с новыми настройками

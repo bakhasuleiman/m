@@ -620,6 +620,24 @@
                 updateClientList();
                 break;
                 
+              case 'clientReconnected':
+                // Обновляем статус переподключенного клиента
+                const reconnectedClientIndex = clients.findIndex(client => client.clientId === message.clientId);
+                if (reconnectedClientIndex !== -1) {
+                  // Клиент уже есть в списке, обновляем его статус
+                  clients[reconnectedClientIndex].timestamp = message.timestamp;
+                } else {
+                  // На случай, если клиента нет в списке, добавляем его
+                  clients.push({
+                    clientId: message.clientId,
+                    paused: false,
+                    pageData: null,
+                    timestamp: message.timestamp
+                  });
+                }
+                updateClientList();
+                break;
+                
               case 'clientDisconnected':
                 // Удаляем клиента из списка
                 clients = clients.filter(client => client.clientId !== message.clientId);

@@ -46,12 +46,39 @@ wss.on('connection', (ws) => {
       // Регистрация клиента
       if (data.type === 'register') {
         if (data.role === 'client') {
-          const clientId = uuidv4();
+          // Проверяем, существует ли уже клиент с таким ID
+          let clientId = data.clientId || uuidv4();
+          let existingData = null;
+          
+          // Если клиент хочет восстановить сессию
+          if (data.clientId && clients.has(data.clientId)) {
+            // Получаем данные существующего клиента перед его удалением
+            existingData = {
+              pageData: clients.get(data.clientId).pageData,
+              settings: clients.get(data.clientId).settings,
+              paused: clients.get(data.clientId).paused
+            };
+            
+            // Удаляем старое соединение, если оно еще существует
+            const oldClient = clients.get(data.clientId);
+            if (oldClient && oldClient !== ws) {
+              try {
+                oldClient.close();
+              } catch (e) {
+                console.error(`Ошибка при закрытии старого соединения: ${e.message}`);
+              }
+            }
+            
+            console.log(`Клиент ${clientId} восстановил соединение`);
+          } else {
+            console.log(`Клиент ${clientId} зарегистрирован`);
+          }
+          
           ws.clientId = clientId;
           ws.role = 'client';
-          ws.paused = false;
-          ws.pageData = null;
-          ws.settings = { ...defaultSettings };
+          ws.paused = existingData ? existingData.paused : false;
+          ws.pageData = existingData ? existingData.pageData : null;
+          ws.settings = existingData ? existingData.settings : { ...defaultSettings };
           
           clients.set(clientId, ws);
           
@@ -62,14 +89,13 @@ wss.on('connection', (ws) => {
             settings: ws.settings
           }));
           
-          // Уведомляем всех админов о новом клиенте
+          // Уведомляем всех админов о переподключении клиента
+          const eventType = existingData ? 'clientReconnected' : 'clientConnected';
           broadcastToAdmins({
-            type: 'clientConnected',
+            type: eventType,
             clientId,
             timestamp: new Date().toISOString()
           });
-          
-          console.log(`Клиент ${clientId} зарегистрирован`);
         } 
         else if (data.role === 'admin') {
           ws.role = 'admin';

@@ -91,7 +91,7 @@
         const serverOrigin = window.location.origin;
         
         // Генерируем код букмарклета
-        const bookmarkletCode = `javascript:import('${serverOrigin}/loader.js').catch(console.error)`;
+        const bookmarkletCode = `javascript:import('${serverOrigin}/loader.js')`;
         
         // Обновляем textarea
         document.getElementById('bookmarkletCode').value = bookmarkletCode;
