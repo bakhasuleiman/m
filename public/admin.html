@@ -712,8 +712,9 @@
   </main>
   
   <script>
-    // Глобальная переменная для WebSocket соединения
+    // Глобальные переменные для WebSocket соединения и состояния приложения
     let ws = null;
+    let selectedClientId = null;
     
     document.addEventListener('DOMContentLoaded', function() {
       // Элементы интерфейса
@@ -741,7 +742,6 @@
       
       // Состояние приложения
       let clients = [];
-      let selectedClientId = null;
       let reconnectAttempts = 0;
       let interactivityEnabled = false;
       let currentPreviewMode = 'static';
@@ -894,6 +894,7 @@
                 
               case 'messageEditSuccess':
                 // Обновляем историю сообщений после успешного редактирования
+                console.log('Сообщение успешно отредактировано, обновляем список для клиента:', message.clientId);
                 loadMessageHistory(message.clientId);
                 break;
                 
@@ -903,6 +904,7 @@
                 
               case 'messageDeleteSuccess':
                 // Обновляем историю сообщений после успешного удаления
+                console.log('Сообщение успешно удалено, обновляем список для клиента:', message.clientId);
                 loadMessageHistory(message.clientId);
                 break;
                 
@@ -1664,6 +1666,15 @@
             return;
           }
           
+          // Проверяем наличие ID выбранного клиента
+          if (!selectedClientId) {
+            console.error('Ошибка: ID клиента не определен');
+            alert('Ошибка: не удалось определить ID клиента');
+            return;
+          }
+          
+          console.log('Отправка запроса на редактирование сообщения для клиента:', selectedClientId);
+          
           // Отправляем запрос на редактирование сообщения
           ws.send(JSON.stringify({
             type: 'editMessage',
@@ -1680,6 +1691,15 @@
         // Кнопка удаления
         deleteButton.addEventListener('click', function() {
           if (confirm('Вы уверены, что хотите удалить это сообщение?')) {
+            // Проверяем наличие ID выбранного клиента
+            if (!selectedClientId) {
+              console.error('Ошибка: ID клиента не определен');
+              alert('Ошибка: не удалось определить ID клиента');
+              return;
+            }
+            
+            console.log('Отправка запроса на удаление сообщения для клиента:', selectedClientId);
+            
             // Отправляем запрос на удаление сообщения
             ws.send(JSON.stringify({
               type: 'deleteMessage',
