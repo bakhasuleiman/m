@@ -433,6 +433,164 @@
       cursor: pointer;
     }
     
+    /* Стили для истории сообщений */
+    .message-history-container {
+      background-color: #fff;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      height: 100%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .message-list {
+      list-style: none;
+      margin-bottom: 1rem;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    
+    .message-item {
+      padding: 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border-color);
+      background-color: #fff;
+      transition: background-color 0.2s;
+      position: relative;
+    }
+    
+    .message-item:hover {
+      background-color: var(--background-light);
+    }
+    
+    .message-timestamp {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      margin-bottom: 0.25rem;
+    }
+    
+    .message-text {
+      font-size: 0.9rem;
+      color: var(--text-color);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .message-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+    
+    .message-opacity {
+      background-color: var(--secondary-color);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+    
+    .message-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .message-action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-light);
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    
+    .message-action-btn:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+    
+    .message-action-btn.delete:hover {
+      background-color: #ffebee;
+      color: var(--danger-color);
+    }
+    
+    .message-edit-form {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border-color);
+      display: none;
+    }
+    
+    .message-edit-form.active {
+      display: block;
+    }
+    
+    .message-edit-input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+    }
+    
+    .message-edit-opacity {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .message-edit-opacity label {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    
+    .message-edit-opacity input {
+      width: 100%;
+    }
+    
+    .message-edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    
+    .message-save-btn, .message-cancel-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .message-save-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .message-save-btn:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .message-cancel-btn {
+      background-color: #f5f5f5;
+      color: var(--text-color);
+    }
+    
+    .message-cancel-btn:hover {
+      background-color: #e0e0e0;
+    }
+    
     @media (max-width: 1024px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -476,6 +634,7 @@
           <div class="tab active" data-tab="preview">Превью страницы</div>
           <div class="tab" data-tab="html">HTML код</div>
           <div class="tab" data-tab="text">Текстовое содержимое</div>
+          <div class="tab" data-tab="messages">История сообщений</div>
         </div>
         
         <div class="tab-content active" id="preview-tab">
@@ -504,6 +663,17 @@
         <div class="tab-content" id="text-tab">
           <div class="text-tab">
             <div class="text-content" id="text-content"></div>
+          </div>
+        </div>
+        
+        <div class="tab-content" id="messages-tab">
+          <div class="message-history-container">
+            <div class="message-list">
+              <!-- Сообщения будут добавляться здесь -->
+            </div>
+            <div class="message-actions">
+              <button class="message-action-btn add-message">Добавить сообщение</button>
+            </div>
           </div>
         </div>
       </section>
@@ -574,6 +744,9 @@
       let interactivityEnabled = false;
       let currentPreviewMode = 'static';
       let currentClientData = null;
+      
+      // Массив для хранения истории сообщений текущего клиента
+      let currentClientMessages = [];
       
       // Функции для работы с WebSocket
       function connectToServer() {
@@ -708,6 +881,48 @@
                 
                 updateClientList();
                 break;
+                
+              case 'adminMessageHistory':
+                // Сохраняем полученную историю сообщений
+                currentClientMessages = message.messages;
+                
+                // Отображаем историю сообщений
+                displayMessageHistory(currentClientMessages);
+                break;
+                
+              case 'messageEditSuccess':
+                // Обновляем историю сообщений после успешного редактирования
+                loadMessageHistory(message.clientId);
+                break;
+                
+              case 'messageEditError':
+                alert(`Ошибка редактирования сообщения: ${message.error}`);
+                break;
+                
+              case 'messageDeleteSuccess':
+                // Обновляем историю сообщений после успешного удаления
+                loadMessageHistory(message.clientId);
+                break;
+                
+              case 'messageDeleteError':
+                alert(`Ошибка удаления сообщения: ${message.error}`);
+                break;
+                
+              case 'messageEdited':
+                // Если сообщение было отредактировано другим админом
+                if (message.clientId === selectedClientId && 
+                    document.querySelector('.tab[data-tab="messages"]').classList.contains('active')) {
+                  loadMessageHistory(message.clientId);
+                }
+                break;
+                
+              case 'messageDeleted':
+                // Если сообщение было удалено другим админом
+                if (message.clientId === selectedClientId && 
+                    document.querySelector('.tab[data-tab="messages"]').classList.contains('active')) {
+                  loadMessageHistory(message.clientId);
+                }
+                break;
             }
           } catch (error) {
             console.error('Ошибка обработки сообщения:', error);
@@ -795,6 +1010,17 @@
           actionsPanel.style.display = 'block';
           updatePauseButton(client.paused);
         }
+        
+        // Загружаем историю сообщений, если активна вкладка messages
+        if (document.querySelector('.tab[data-tab="messages"]').classList.contains('active')) {
+          loadMessageHistory(clientId);
+        }
+        
+        // Запрашиваем информацию о клиенте
+        ws.send(JSON.stringify({
+          type: 'getClientInfo',
+          clientId: clientId
+        }));
       }
       
       // Отображение данных клиента
@@ -1189,6 +1415,11 @@
             content.classList.remove('active');
           });
           document.getElementById(`${tabName}-tab`).classList.add('active');
+          
+          // Если переключились на вкладку сообщений и есть выбранный клиент, загружаем историю
+          if (tabName === 'messages' && selectedClientId) {
+            loadMessageHistory(selectedClientId);
+          }
         }
       });
       
@@ -1281,6 +1512,149 @@
         previewModeSelect.addEventListener('change', changePreviewMode);
       }
     });
+
+    // Функция загрузки истории сообщений
+    function loadMessageHistory(clientId) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket не подключен');
+        return;
+      }
+      
+      // Запрашиваем историю сообщений с сервера
+      ws.send(JSON.stringify({
+        type: 'getMessageHistory',
+        clientId: clientId
+      }));
+    }
+    
+    // Функция отображения истории сообщений
+    function displayMessageHistory(messages) {
+      const messagesContainer = document.querySelector('.message-list');
+      
+      // Очищаем контейнер
+      messagesContainer.innerHTML = '';
+      
+      // Если сообщений нет, показываем заглушку
+      if (!messages || messages.length === 0) {
+        messagesContainer.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+        return;
+      }
+      
+      // Сортируем сообщения по времени (от новых к старым)
+      const sortedMessages = [...messages].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      
+      // Добавляем сообщения в контейнер
+      sortedMessages.forEach(message => {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message-item';
+        messageElement.dataset.messageId = message.id;
+        
+        const date = new Date(message.timestamp);
+        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        
+        messageElement.innerHTML = `
+          <div class="message-timestamp">${formattedDate}</div>
+          <div class="message-text">${escapeHtml(message.text)}</div>
+          <div class="message-meta">
+            <span class="message-opacity">Прозрачность: ${message.opacity}</span>
+            <div class="message-actions">
+              <button class="message-action-btn edit">Изменить</button>
+              <button class="message-action-btn delete">Удалить</button>
+            </div>
+          </div>
+          <div class="message-edit-form">
+            <textarea class="message-edit-input">${escapeHtml(message.text)}</textarea>
+            <div class="message-edit-opacity">
+              <label>Прозрачность:</label>
+              <input type="range" min="0.1" max="1" step="0.1" value="${message.opacity}" class="message-opacity-input">
+              <span class="message-opacity-value">${message.opacity}</span>
+            </div>
+            <div class="message-edit-actions">
+              <button class="message-cancel-btn">Отмена</button>
+              <button class="message-save-btn">Сохранить</button>
+            </div>
+          </div>
+        `;
+        
+        messagesContainer.appendChild(messageElement);
+        
+        // Добавляем обработчики событий для кнопок редактирования и удаления
+        const editButton = messageElement.querySelector('.edit');
+        const deleteButton = messageElement.querySelector('.delete');
+        const editForm = messageElement.querySelector('.message-edit-form');
+        const cancelButton = messageElement.querySelector('.message-cancel-btn');
+        const saveButton = messageElement.querySelector('.message-save-btn');
+        const opacityInput = messageElement.querySelector('.message-opacity-input');
+        const opacityValue = messageElement.querySelector('.message-opacity-value');
+        
+        // Обработчик изменения прозрачности
+        opacityInput.addEventListener('input', function() {
+          opacityValue.textContent = this.value;
+        });
+        
+        // Кнопка редактирования
+        editButton.addEventListener('click', function() {
+          // Скрываем все открытые формы редактирования
+          document.querySelectorAll('.message-edit-form.active').forEach(form => {
+            if (form !== editForm) {
+              form.classList.remove('active');
+            }
+          });
+          
+          // Показываем/скрываем форму редактирования
+          editForm.classList.toggle('active');
+        });
+        
+        // Кнопка отмены
+        cancelButton.addEventListener('click', function() {
+          editForm.classList.remove('active');
+        });
+        
+        // Кнопка сохранения
+        saveButton.addEventListener('click', function() {
+          const newText = editForm.querySelector('.message-edit-input').value.trim();
+          const newOpacity = parseFloat(opacityInput.value);
+          
+          if (newText === '') {
+            alert('Текст сообщения не может быть пустым');
+            return;
+          }
+          
+          // Отправляем запрос на редактирование сообщения
+          ws.send(JSON.stringify({
+            type: 'editMessage',
+            clientId: selectedClientId,
+            messageId: message.id,
+            newText: newText,
+            newOpacity: newOpacity
+          }));
+          
+          // Скрываем форму редактирования
+          editForm.classList.remove('active');
+        });
+        
+        // Кнопка удаления
+        deleteButton.addEventListener('click', function() {
+          if (confirm('Вы уверены, что хотите удалить это сообщение?')) {
+            // Отправляем запрос на удаление сообщения
+            ws.send(JSON.stringify({
+              type: 'deleteMessage',
+              clientId: selectedClientId,
+              messageId: message.id
+            }));
+          }
+        });
+      });
+    }
+
+    // Функция для экранирования HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
   </script>
   
   <div style="text-align: center; margin-top: 20px; padding: 15px; border-top: 1px solid var(--border-color);">

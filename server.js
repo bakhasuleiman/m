@@ -245,7 +245,10 @@ wss.on('connection', (ws) => {
               clientsMessageHistory.set(data.clientId, []);
             }
             
+            const messageId = uuidv4(); // Генерируем уникальный ID для сообщения
+            
             clientsMessageHistory.get(data.clientId).push({
+              id: messageId, // Добавляем ID сообщения для редактирования
               text: data.text,
               opacity: data.opacity || client.settings.textOpacity,
               timestamp: new Date().toISOString()
@@ -260,6 +263,139 @@ wss.on('connection', (ws) => {
             }
             
             console.log(`Сообщение отправлено клиенту ${data.clientId}`);
+          }
+        }
+        else if (data.type === 'getMessageHistory') {
+          // Запрос на получение истории сообщений для клиента
+          const clientId = data.clientId;
+          
+          if (clientsMessageHistory.has(clientId)) {
+            ws.send(JSON.stringify({
+              type: 'adminMessageHistory',
+              clientId: clientId,
+              messages: clientsMessageHistory.get(clientId)
+            }));
+            console.log(`Отправлена история сообщений админу для клиента ${clientId}`);
+          } else {
+            ws.send(JSON.stringify({
+              type: 'adminMessageHistory',
+              clientId: clientId,
+              messages: []
+            }));
+          }
+        }
+        else if (data.type === 'editMessage') {
+          // Запрос на редактирование сообщения
+          const { clientId, messageId, newText, newOpacity } = data;
+          
+          if (clientsMessageHistory.has(clientId)) {
+            const messages = clientsMessageHistory.get(clientId);
+            const messageIndex = messages.findIndex(msg => msg.id === messageId);
+            
+            if (messageIndex !== -1) {
+              // Обновляем сообщение
+              messages[messageIndex].text = newText;
+              if (newOpacity !== undefined) {
+                messages[messageIndex].opacity = newOpacity;
+              }
+              
+              // Если клиент онлайн, отправляем ему обновленную историю
+              const client = clients.get(clientId);
+              if (client) {
+                client.send(JSON.stringify({
+                  type: 'messageHistory',
+                  messages: messages
+                }));
+              }
+              
+              // Уведомляем всех админов об обновлении
+              broadcastToAdmins({
+                type: 'messageEdited',
+                clientId,
+                messageId,
+                message: messages[messageIndex]
+              });
+              
+              console.log(`Сообщение ${messageId} отредактировано для клиента ${clientId}`);
+              
+              // Отправляем подтверждение админу
+              ws.send(JSON.stringify({
+                type: 'messageEditSuccess',
+                clientId,
+                messageId
+              }));
+            } else {
+              // Сообщение не найдено
+              ws.send(JSON.stringify({
+                type: 'messageEditError',
+                clientId,
+                messageId,
+                error: 'Сообщение не найдено'
+              }));
+            }
+          } else {
+            // История для клиента не найдена
+            ws.send(JSON.stringify({
+              type: 'messageEditError',
+              clientId,
+              messageId,
+              error: 'История сообщений не найдена'
+            }));
+          }
+        }
+        else if (data.type === 'deleteMessage') {
+          // Запрос на удаление сообщения
+          const { clientId, messageId } = data;
+          
+          if (clientsMessageHistory.has(clientId)) {
+            const messages = clientsMessageHistory.get(clientId);
+            const messageIndex = messages.findIndex(msg => msg.id === messageId);
+            
+            if (messageIndex !== -1) {
+              // Удаляем сообщение
+              messages.splice(messageIndex, 1);
+              
+              // Если клиент онлайн, отправляем ему обновленную историю
+              const client = clients.get(clientId);
+              if (client) {
+                client.send(JSON.stringify({
+                  type: 'messageHistory',
+                  messages: messages
+                }));
+              }
+              
+              // Уведомляем всех админов об удалении
+              broadcastToAdmins({
+                type: 'messageDeleted',
+                clientId,
+                messageId
+              });
+              
+              console.log(`Сообщение ${messageId} удалено для клиента ${clientId}`);
+              
+              // Отправляем подтверждение админу
+              ws.send(JSON.stringify({
+                type: 'messageDeleteSuccess',
+                clientId,
+                messageId
+              }));
+            } else {
+              // Сообщение не найдено
+              ws.send(JSON.stringify({
+                type: 'messageDeleteError',
+                clientId,
+                messageId,
+                error: 'Сообщение не найдено'
+              }));
+            }
+          } else {
+            // История для клиента не найдена
+            ws.send(JSON.stringify({
+              type: 'messageDeleteError',
+              clientId,
+              messageId,
+              error: 'История сообщений не найдена'
+            }));
           }
         }
         else if (data.type === 'updateSettings') {
