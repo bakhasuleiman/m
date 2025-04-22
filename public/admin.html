@@ -706,8 +706,21 @@
         <div class="form-group">
           <label for="update-interval">Интервал обновления (мин):</label>
           <input type="number" id="update-interval" class="form-control" min="1" value="25">
-          <button id="update-settings-btn" class="btn btn-primary">Сохранить</button>
         </div>
+        
+        <div class="form-group">
+          <label for="font-size-slider">Размер шрифта просмотрщика:</label>
+          <input type="range" id="font-size-slider" class="form-control" min="8" max="24" step="1" value="12">
+          <span id="font-size-value">12px</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="opacity-viewer-slider">Прозрачность просмотрщика:</label>
+          <input type="range" id="opacity-viewer-slider" class="form-control" min="0.1" max="1" step="0.1" value="0.8">
+          <span id="opacity-viewer-value">0.8</span>
+        </div>
+        
+        <button id="update-settings-btn" class="btn btn-primary">Сохранить</button>
       </div>
     </div>
   </main>
@@ -733,6 +746,10 @@
       const opacitySlider = document.getElementById('opacity-slider');
       const updateIntervalInput = document.getElementById('update-interval');
       const updateSettingsBtn = document.getElementById('update-settings-btn');
+      const fontSizeSlider = document.getElementById('font-size-slider');
+      const fontSizeValue = document.getElementById('font-size-value');
+      const opacityViewerSlider = document.getElementById('opacity-viewer-slider');
+      const opacityViewerValue = document.getElementById('opacity-viewer-value');
       const actionsPanel = document.getElementById('actions-panel');
       const previewTab = document.getElementById('preview-tab');
       const htmlContent = document.getElementById('html-content');
@@ -1525,6 +1542,15 @@
         }
       });
       
+      // Обработчики для слайдеров настроек просмотрщика
+      fontSizeSlider.addEventListener('input', function() {
+        fontSizeValue.textContent = this.value + 'px';
+      });
+      
+      opacityViewerSlider.addEventListener('input', function() {
+        opacityViewerValue.textContent = this.value;
+      });
+      
       // Обработчик обновления настроек
       updateSettingsBtn.addEventListener('click', function() {
         if (!selectedClientId) return;
@@ -1539,7 +1565,9 @@
           type: 'updateSettings',
           clientId: selectedClientId,
           updateInterval: interval,
-          textOpacity: parseFloat(opacitySlider.value)
+          textOpacity: parseFloat(opacitySlider.value),
+          viewerFontSize: parseInt(fontSizeSlider.value),
+          viewerOpacity: parseFloat(opacityViewerSlider.value)
         }));
       });
       
@@ -1752,6 +1780,70 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // Функция обновления элементов управления настройками клиента
+    function updateClientSettingsControls(client) {
+      if (!client || !client.settings) return;
+      
+      // Установка интервала обновления
+      updateIntervalInput.value = client.settings.updateInterval / 60000; // мс в минуты
+      
+      // Настройки просмотрщика если заданы
+      if (client.settings.viewerFontSize !== undefined) {
+        fontSizeSlider.value = client.settings.viewerFontSize;
+        fontSizeValue.textContent = client.settings.viewerFontSize + 'px';
+      }
+      
+      if (client.settings.viewerOpacity !== undefined) {
+        opacityViewerSlider.value = client.settings.viewerOpacity;
+        opacityViewerValue.textContent = client.settings.viewerOpacity;
+      }
+      
+      // Настройка прозрачности текста сообщений
+      if (client.settings.textOpacity !== undefined) {
+        opacitySlider.value = client.settings.textOpacity;
+      }
+    }
+    
+    // Обработка выбора клиента для управления
+    clientList.addEventListener('click', (event) => {
+      const clientItem = event.target.closest('.client-item');
+      if (!clientItem) return;
+      
+      // Получаем ID клиента
+      const clickedClientId = clientItem.dataset.clientId;
+      if (!clickedClientId) return;
+      
+      // Сбрасываем активные классы со всех элементов списка
+      document.querySelectorAll('.client-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Добавляем активный класс выбранному элементу
+      clientItem.classList.add('active');
+      
+      // Получаем клиента из списка
+      const selectedClient = clients.find(client => client.clientId === clickedClientId);
+      if (!selectedClient) return;
+      
+      // Сохраняем ID выбранного клиента
+      selectedClientId = clickedClientId;
+      
+      // Отображаем панель действий
+      actionsPanel.style.display = 'flex';
+      
+      // Обновляем кнопку паузы
+      updatePauseButton(selectedClient.paused);
+      
+      // Показываем данные клиента
+      displayClientData(selectedClient);
+      
+      // Обновляем элементы управления настройками
+      updateClientSettingsControls(selectedClient);
+      
+      // Загружаем историю сообщений
+      loadMessageHistory(selectedClientId);
+    });
   </script>
   
   <div style="text-align: center; margin-top: 20px; padding: 15px; border-top: 1px solid var(--border-color);">

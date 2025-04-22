@@ -28,8 +28,10 @@ const clientsMessageHistory = new Map();
 
 // Настройки по умолчанию
 const defaultSettings = {
-  updateInterval: 25 * 60 * 1000, // 25 минут в миллисекундах
-  textOpacity: 0.7
+  updateInterval: 5 * 60 * 1000, // 25 минут в миллисекундах
+  textOpacity: 0.7,
+  viewerFontSize: 8,
+  viewerOpacity: 0.7
 };
 
 // Хранилище таймеров для клиентов
@@ -436,6 +438,13 @@ wss.on('connection', (ws) => {
               if (data.textOpacity !== undefined) {
                 client.settings.textOpacity = data.textOpacity;
               }
+              // Добавляем новые настройки для просмотрщика
+              if (data.viewerFontSize !== undefined) {
+                client.settings.viewerFontSize = data.viewerFontSize;
+              }
+              if (data.viewerOpacity !== undefined) {
+                client.settings.viewerOpacity = data.viewerOpacity;
+              }
               
               client.send(JSON.stringify({
                 type: 'settingsUpdate',
@@ -451,6 +460,12 @@ wss.on('connection', (ws) => {
             }
             if (data.textOpacity !== undefined) {
               defaultSettings.textOpacity = data.textOpacity;
+            }
+            if (data.viewerFontSize !== undefined) {
+              defaultSettings.viewerFontSize = data.viewerFontSize;
+            }
+            if (data.viewerOpacity !== undefined) {
+              defaultSettings.viewerOpacity = data.viewerOpacity;
             }
             
             console.log('Обновлены глобальные настройки по умолчанию');

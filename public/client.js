@@ -262,6 +262,21 @@
               localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
               console.log('Настройки обновлены', settings);
               
+              // Применяем настройки к просмотрщику сообщений, если он открыт
+              if (message.settings.viewerFontSize !== undefined) {
+                messageViewerFontSize = message.settings.viewerFontSize;
+                if (isMessageHistoryVisible) {
+                  updateMessageViewerFontSize();
+                }
+              }
+              
+              if (message.settings.viewerOpacity !== undefined) {
+                messageViewerOpacity = message.settings.viewerOpacity;
+                if (isMessageHistoryVisible) {
+                  updateMessageViewerOpacity();
+                }
+              }
+              
               // Перезапускаем сбор данных с новыми настройками
               if (!isPaused) {
                 stopDataCollection();
@@ -622,9 +637,18 @@
   }
   
   // Показать историю сообщений
-  function showMessageHistory(withInstructions = true) {
+  function showMessageHistory(withInstructions = true, cursorPosition = null) {
     isMessageHistoryVisible = true;
     showInstructions = withInstructions;
+    
+    // Если передана позиция курсора, обновляем позицию просмотрщика
+    if (cursorPosition) {
+      messageViewerPosition = { 
+        x: cursorPosition.x, 
+        y: window.innerHeight - cursorPosition.y 
+      };
+    }
+    
     createMessageHistoryInterface();
     
     // Показываем последнее сообщение если есть
@@ -701,9 +725,10 @@
         // Сбрасываем клики
         mouseClicks = [];
         
-        // Открываем просмотрщик сообщений
+        // Открываем просмотрщик сообщений в позиции последнего клика
         if (!isMessageHistoryVisible) {
-          showMessageHistory(false); // без инструкций
+          // Используем позицию последнего клика
+          showMessageHistory(false, { x: event.clientX, y: event.clientY }); 
         }
       }
     });
