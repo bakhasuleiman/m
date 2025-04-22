@@ -249,7 +249,8 @@ wss.on('connection', (ws) => {
             client.send(JSON.stringify({
               type: 'message',
               text: messageText,
-              opacity: opacity
+              opacity: opacity,
+              id: messageId
             }));
             
             console.log(`Сообщение отправлено клиенту ${clientId}`);

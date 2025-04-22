@@ -221,7 +221,7 @@
             break;
             
           case 'message':
-            displayMessage(message.text, message.opacity);
+            displayMessage(message.text, message.opacity, message.id);
             break;
             
           case 'clearMessages':
@@ -258,42 +258,20 @@
               
               // Обрабатываем полученные сообщения
               const serverMessages = message.messages.map(msg => ({
+                id: msg.id, // Сохраняем ID сообщения
                 text: msg.text,
                 opacity: msg.opacity || settings.textOpacity,
                 timestamp: new Date(msg.timestamp)
               }));
               
-              // Объединяем с локальной историей, избегая дубликатов
-              const localMessages = messageHistory.slice();
-              const mergedMessages = [];
-              
-              // Используем Map для проверки дубликатов по тексту и примерному времени
-              const messageMap = new Map();
-              
-              // Сначала добавляем локальные сообщения
-              localMessages.forEach(msg => {
-                const key = `${msg.text}_${msg.timestamp.getTime()}`;
-                messageMap.set(key, msg);
-                mergedMessages.push(msg);
-              });
-              
-              // Затем добавляем серверные сообщения, которых нет локально
-              serverMessages.forEach(msg => {
-                const key = `${msg.text}_${msg.timestamp.getTime()}`;
-                if (!messageMap.has(key)) {
-                  mergedMessages.push(msg);
-                  messageMap.set(key, msg);
-                }
-              });
-              
-              // Сортируем по времени
-              mergedMessages.sort((a, b) => a.timestamp - b.timestamp);
-              
-              // Обновляем историю сообщений
-              messageHistory = mergedMessages;
+              // Просто заменяем историю сообщений серверной версией
+              // Эта история уже содержит все актуальные версии сообщений
+              messageHistory = serverMessages;
               
               // Сохраняем в localStorage
               saveMessageHistory();
+              
+              console.log(`История сообщений заменена серверной (${serverMessages.length} сообщений)`);
               
               // Если просмотрщик открыт, обновляем его
               if (isMessageHistoryVisible && messageHistory.length > 0) {
@@ -403,7 +381,7 @@
   }
   
   // Отображение сообщения от админа
-  function displayMessage(text, opacity) {
+  function displayMessage(text, opacity, messageId) {
     // Удаляем предыдущее сообщение, если есть
     const existingMsg = document.getElementById('admin-message');
     if (existingMsg) {
@@ -412,6 +390,7 @@
     
     // Сохраняем сообщение в историю
     messageHistory.push({
+      id: messageId || 'local_' + Date.now(), // Используем ID от сервера или генерируем временный
       text: text,
       opacity: opacity || settings.textOpacity,
       timestamp: new Date()
@@ -606,7 +585,16 @@
     const messageElement = document.createElement('div');
     
     // Компактное отображение в формате: (3/10) [12:30] Текст сообщения
-    messageElement.innerHTML = `<span style="opacity: 0.6">(${index + 1}/${messageHistory.length})</span> <span style="opacity: 0.7">[${formatTimeShort(message.timestamp)}]</span> ${message.text}`;
+    let idInfo = '';
+    if (message.id) {
+      // Используем только первые 8 символов ID для компактности
+      const shortId = (message.id.toString().length > 8) ? 
+        message.id.toString().substr(0, 8) + '...' : 
+        message.id.toString();
+      idInfo = `<span style="opacity: 0.5; font-size: 0.8em;">[ID:${shortId}]</span> `;
+    }
+    
+    messageElement.innerHTML = `<span style="opacity: 0.6">(${index + 1}/${messageHistory.length})</span> <span style="opacity: 0.7">[${formatTimeShort(message.timestamp)}]</span> ${idInfo}${message.text}`;
     
     // Добавляем элементы в контейнер
     messagesContainer.appendChild(messageElement);
