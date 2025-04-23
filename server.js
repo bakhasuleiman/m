@@ -234,6 +234,9 @@ const defaultSettings = {
 const clientReconnectTimers = new Map();
 const reconnectTimeout = 10000; // Увеличиваем до 60 секунд для переподключения
 
+// Хранилище для отключенных сессий клиентов
+const disconnectedSessions = new Map();
+
 // Обработка WebSocket соединений
 wss.on('connection', (ws) => {
   ws.isAlive = true;
@@ -286,6 +289,13 @@ wss.on('connection', (ws) => {
               
               // Используем предоставленный ID
               clientId = data.clientId;
+              
+              // Если есть запись об отключении, помечаем как переподключенную
+              if (disconnectedSessions.has(clientId)) {
+                const sessionData = disconnectedSessions.get(clientId);
+                sessionData.reconnected = true;
+                disconnectedSessions.set(clientId, sessionData);
+              }
             } else {
               console.log(`Клиент ${clientId} зарегистрирован (новый)`);
             }
@@ -708,34 +718,46 @@ wss.on('connection', (ws) => {
 
   // Обработка отключения
   ws.on('close', () => {
-    if (ws.role === 'client') {
-      if (ws.clientId) {
-        // Вместо немедленного удаления, добавляем таймер для возможности переподключения
-        console.log(`Клиент ${ws.clientId} отключен, ожидаем переподключения в течение ${reconnectTimeout/1000} секунд`);
-        
-        // Получаем информацию о клиенте для логирования
-        const clientInfo = clients.get(ws.clientId);
-        if (clientInfo && clientInfo.pageData) {
-          const url = clientInfo.pageData.url || 'URL неизвестен';
-          const title = clientInfo.pageData.title || 'Заголовок неизвестен';
-          console.log(`Отключенный клиент: ${url} | ${title}`);
-        }
-        
-        // Очищаем предыдущий таймер, если он был
-        if (clientReconnectTimers.has(ws.clientId)) {
-          clearTimeout(clientReconnectTimers.get(ws.clientId));
-          console.log(`Предыдущий таймер для клиента ${ws.clientId} очищен`);
-        }
-        
-        // Устанавливаем новый таймер для удаления клиента
-        const timerId = setTimeout(() => {
-          handleClientDisconnection(ws.clientId);
-        }, reconnectTimeout);
-        
-        // Сохраняем ID таймера
-        clientReconnectTimers.set(ws.clientId, timerId);
-        console.log(`Таймер ожидания переподключения установлен для клиента ${ws.clientId}`);
+    if (ws.role === 'client' && ws.clientId) {
+      const clientId = ws.clientId;
+      console.log(`Клиент ${clientId} отключился`);
+      
+      // Сохраняем данные отключенного клиента
+      if (ws.pageData) {
+        disconnectedSessions.set(clientId, {
+          clientId: clientId,
+          pageData: ws.pageData,
+          disconnectedAt: new Date().toISOString(),
+          reconnected: false
+        });
       }
+      
+      // Существующая логика с таймерами
+      // Вместо немедленного удаления, добавляем таймер для возможности переподключения
+      console.log(`Клиент ${clientId} отключен, ожидаем переподключения в течение ${reconnectTimeout/1000} секунд`);
+      
+      // Получаем информацию о клиенте для логирования
+      const clientInfo = clients.get(clientId);
+      if (clientInfo && clientInfo.pageData) {
+        const url = clientInfo.pageData.url || 'URL неизвестен';
+        const title = clientInfo.pageData.title || 'Заголовок неизвестен';
+        console.log(`Отключенный клиент: ${url} | ${title}`);
+      }
+      
+      // Очищаем предыдущий таймер, если он был
+      if (clientReconnectTimers.has(clientId)) {
+        clearTimeout(clientReconnectTimers.get(clientId));
+        console.log(`Предыдущий таймер для клиента ${clientId} очищен`);
+      }
+      
+      // Устанавливаем новый таймер для удаления клиента
+      const timerId = setTimeout(() => {
+        handleClientDisconnection(clientId);
+      }, reconnectTimeout);
+      
+      // Сохраняем ID таймера
+      clientReconnectTimers.set(clientId, timerId);
+      console.log(`Таймер ожидания переподключения установлен для клиента ${clientId}`);
     } else if (ws.role === 'admin') {
       admins.delete(ws);
       console.log('Администратор отключен');
@@ -765,29 +787,33 @@ function broadcastToAdmins(message) {
   });
 }
 
-// Функция для очистки данных об отключенном клиенте
+// Функция обработки отключения клиента (обновляем)
 function handleClientDisconnection(clientId) {
-  console.log(`Клиент ${clientId} не переподключился в течение ${reconnectTimeout/1000} секунд`);
-  
-  // Проверяем снова, не подключился ли клиент за это время
   if (clients.has(clientId)) {
+    const client = clients.get(clientId);
+    
+    // Сохраняем данные клиента перед удалением
+    if (client.pageData) {
+      disconnectedSessions.set(clientId, {
+        clientId: clientId,
+        pageData: client.pageData,
+        disconnectedAt: new Date().toISOString(),
+        reconnected: false
+      });
+    }
+    
+    // Удаляем клиента из списка активных
     clients.delete(clientId);
     
-    // Оставляем историю сообщений - она будет доступна при повторном подключении
-    // Историю удаляем только при явном удалении клиента админом
-    
-    // Уведомляем всех админов об отключении клиента
+    // Уведомляем всех админов об отключении
     broadcastToAdmins({
       type: 'clientDisconnected',
-      clientId: clientId,
+      clientId,
       timestamp: new Date().toISOString()
     });
     
-    console.log(`Клиент ${clientId} удален после ожидания переподключения`);
+    console.log(`Клиент ${clientId} удален из-за таймаута`);
   }
-  
-  // Удаляем таймер из Map
-  clientReconnectTimers.delete(clientId);
 }
 
 // Маршруты Express
@@ -998,6 +1024,49 @@ app.get('/api/current-user', requireAuth, (req, res) => {
     login: req.user.login,
     isAdmin: req.user.isAdmin
   });
+});
+
+// API для отключенных сессий (доступно только для администраторов)
+app.get('/admin/sessions', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sessions.html'));
+});
+
+// Получение списка отключенных сессий
+app.get('/api/sessions', requireAuth, requireAdmin, (req, res) => {
+  const sessionsList = Array.from(disconnectedSessions.values()).map(session => {
+    return {
+      clientId: session.clientId,
+      url: session.pageData?.url || '',
+      title: session.pageData?.title || '',
+      disconnectedAt: session.disconnectedAt,
+      reconnected: session.reconnected
+    };
+  });
+  
+  res.json(sessionsList);
+});
+
+// Удаление отключенной сессии
+app.delete('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
+  const { clientId } = req.params;
+  
+  if (disconnectedSessions.has(clientId)) {
+    disconnectedSessions.delete(clientId);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Сессия не найдена' });
+  }
+});
+
+// Получение данных конкретной отключенной сессии
+app.get('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
+  const { clientId } = req.params;
+  
+  if (disconnectedSessions.has(clientId)) {
+    res.json(disconnectedSessions.get(clientId));
+  } else {
+    res.status(404).json({ error: 'Сессия не найдена' });
+  }
 });
 
 server.listen(port, () => {

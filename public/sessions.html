@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>История сессий - Система мониторинга веб-страниц</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #5046e5;
+      --primary-light: #6e66ff;
+      --secondary-color: #f0f0ff;
+      --text-color: #333;
+      --text-light: #666;
+      --border-color: #e0e0e0;
+      --danger-color: #e53935;
+      --warning-color: #f57c00;
+      --success-color: #43a047;
+      --background-light: #f9f9ff;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #f5f5f5;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .nav-link {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .nav-link:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .nav-link.active {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #f44336;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+      font-weight: 600;
+      color: var(--text-light);
+      background-color: var(--background-light);
+    }
+    
+    tr:hover {
+      background-color: var(--background-light);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .status-reconnected {
+      background-color: rgba(67, 160, 71, 0.1);
+      color: var(--success-color);
+    }
+    
+    .status-disconnected {
+      background-color: rgba(229, 57, 53, 0.1);
+      color: var(--danger-color);
+    }
+    
+    .action-btn {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border-color);
+      background-color: white;
+      color: var(--text-color);
+      margin-right: 0.25rem;
+    }
+    
+    .action-btn:hover {
+      background-color: var(--background-light);
+    }
+    
+    .action-btn-danger {
+      color: var(--danger-color);
+      border-color: var(--danger-color);
+    }
+    
+    .action-btn-danger:hover {
+      background-color: rgba(229, 57, 53, 0.1);
+    }
+    
+    .empty-state {
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text-light);
+    }
+    
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      color: var(--text-light);
+      opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+    
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    .modal-backdrop.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .modal {
+      background-color: white;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      transform: translateY(20px);
+      transition: transform 0.3s;
+    }
+    
+    .modal-backdrop.visible .modal {
+      transform: translateY(0);
+    }
+    
+    .modal-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .modal-body {
+      padding: 1.5rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    
+    .modal-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    
+    .btn-secondary {
+      background-color: white;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--background-light);
+    }
+    
+    .session-details {
+      margin-bottom: 1rem;
+    }
+    
+    .session-details dt {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-light);
+      font-size: 0.875rem;
+    }
+    
+    .session-details dd {
+      margin-bottom: 1rem;
+    }
+    
+    .session-content {
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 1rem;
+      background-color: var(--background-light);
+      overflow-x: auto;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 300px;
+    }
+    
+    .url-column {
+      max-width: 300px;
+    }
+    
+    .client-id-column {
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+    
+    .filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .filter-label {
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span>Система мониторинга веб-страниц</span>
+      </div>
+      <div class="nav-links">
+        <a href="/admin" class="nav-link">Монитор</a>
+        <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
+        <a href="/admin/users" class="nav-link">Пользователи</a>
+        <a href="/admin/sessions" class="nav-link active">История сессий</a>
+        <button id="logout-btn" class="nav-link">Выйти</button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title">История сессий клиентов</h1>
+        <div class="filters">
+          <div class="filter-item">
+            <input type="checkbox" id="filter-reconnected" checked>
+            <label for="filter-reconnected" class="filter-label">Показывать переподключенные</label>
+          </div>
+        </div>
+      </div>
+      
+      <table id="sessions-table">
+        <thead>
+          <tr>
+            <th>ID клиента</th>
+            <th>URL страницы</th>
+            <th>Заголовок</th>
+            <th>Отключен</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Данные будут загружены через JavaScript -->
+        </tbody>
+      </table>
+      
+      <!-- Пустое состояние -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+        <h3>Нет отключенных сессий</h3>
+        <p>Здесь будут отображаться сессии отключенных клиентов</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно с деталями сессии -->
+  <div id="details-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Детали сессии</div>
+        <button class="action-btn close-modal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <dl class="session-details">
+          <dt>ID клиента:</dt>
+          <dd id="detail-client-id"></dd>
+          
+          <dt>URL страницы:</dt>
+          <dd id="detail-url"></dd>
+          
+          <dt>Заголовок:</dt>
+          <dd id="detail-title"></dd>
+          
+          <dt>Отключен:</dt>
+          <dd id="detail-disconnected-at"></dd>
+          
+          <dt>Статус:</dt>
+          <dd id="detail-status"></dd>
+          
+          <dt>Текст страницы:</dt>
+          <dd>
+            <div id="detail-text" class="session-content"></div>
+          </dd>
+          
+          <dt>HTML страницы:</dt>
+          <dd>
+            <div id="detail-html" class="session-content"></div>
+          </dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Закрыть</button>
+        <button id="delete-session-btn" class="btn btn-danger">Удалить сессию</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно подтверждения удаления -->
+  <div id="delete-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Удаление сессии</div>
+        <button class="action-btn close-delete-modal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить сессию клиента <span id="delete-client-id"></span>?</p>
+        <p>Это действие нельзя отменить.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-delete-modal">Отмена</button>
+        <button id="confirm-delete" class="btn btn-danger">Удалить</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Глобальные переменные
+    let sessions = [];
+    let currentSessionId = null;
+    
+    // DOM элементы
+    const sessionsTable = document.getElementById('sessions-table');
+    const emptyState = document.getElementById('empty-state');
+    const detailsModal = document.getElementById('details-modal');
+    const deleteModal = document.getElementById('delete-modal');
+    const filterReconnected = document.getElementById('filter-reconnected');
+    const deleteClientId = document.getElementById('delete-client-id');
+    const confirmDeleteBtn = document.getElementById('confirm-delete');
+    const deleteSessionBtn = document.getElementById('delete-session-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    // Форматирование даты
+    function formatDate(dateString) {
+      if (!dateString) return 'Неизвестно';
+      const date = new Date(dateString);
+      return date.toLocaleString('ru-RU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // Загрузка списка сессий
+    async function loadSessions() {
+      try {
+        const response = await fetch('/api/sessions');
+        
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки списка сессий');
+        }
+        
+        sessions = await response.json();
+        renderSessions();
+      } catch (error) {
+        console.error('Ошибка при загрузке сессий:', error);
+      }
+    }
+    
+    // Отрисовка таблицы сессий
+    function renderSessions() {
+      const tbody = sessionsTable.querySelector('tbody');
+      tbody.innerHTML = '';
+      
+      // Применяем фильтр
+      const showReconnected = filterReconnected.checked;
+      const filteredSessions = sessions.filter(session => 
+        showReconnected || !session.reconnected
+      );
+      
+      if (filteredSessions.length === 0) {
+        emptyState.style.display = 'block';
+        sessionsTable.style.display = 'none';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      sessionsTable.style.display = 'table';
+      
+      // Сортировка сессий по дате отключения (новые сверху)
+      filteredSessions.sort((a, b) => new Date(b.disconnectedAt) - new Date(a.disconnectedAt));
+      
+      filteredSessions.forEach(session => {
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+          <td class="client-id-column">${session.clientId}</td>
+          <td class="url-column"><div class="truncate">${session.url || 'Неизвестно'}</div></td>
+          <td><div class="truncate">${session.title || 'Неизвестно'}</div></td>
+          <td>${formatDate(session.disconnectedAt)}</td>
+          <td>
+            <span class="status-badge ${session.reconnected ? 'status-reconnected' : 'status-disconnected'}">
+              ${session.reconnected ? 'Переподключен' : 'Отключен'}
+            </span>
+          </td>
+          <td>
+            <button class="action-btn view-details" data-id="${session.clientId}">Детали</button>
+            <button class="action-btn action-btn-danger delete-btn" data-id="${session.clientId}">Удалить</button>
+          </td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+      
+      // Добавляем обработчики для кнопок
+      document.querySelectorAll('.view-details').forEach(btn => {
+        btn.addEventListener('click', viewSessionDetails);
+      });
+      
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', showDeleteConfirmation);
+      });
+    }
+    
+    // Просмотр деталей сессии
+    async function viewSessionDetails(event) {
+      const clientId = event.target.getAttribute('data-id');
+      currentSessionId = clientId;
+      
+      try {
+        const response = await fetch(`/api/sessions/${clientId}`);
+        
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки деталей сессии');
+        }
+        
+        const sessionDetails = await response.json();
+        
+        // Заполняем данные в модальном окне
+        document.getElementById('detail-client-id').textContent = sessionDetails.clientId;
+        document.getElementById('detail-url').textContent = sessionDetails.pageData?.url || 'Неизвестно';
+        document.getElementById('detail-title').textContent = sessionDetails.pageData?.title || 'Неизвестно';
+        document.getElementById('detail-disconnected-at').textContent = formatDate(sessionDetails.disconnectedAt);
+        document.getElementById('detail-status').textContent = sessionDetails.reconnected ? 'Переподключен' : 'Отключен';
+        
+        // HTML и текст содержимого
+        document.getElementById('detail-text').textContent = sessionDetails.pageData?.text || 'Текст отсутствует';
+        document.getElementById('detail-html').textContent = sessionDetails.pageData?.html || 'HTML отсутствует';
+        
+        // Открываем модальное окно
+        detailsModal.classList.add('visible');
+      } catch (error) {
+        console.error('Ошибка при загрузке деталей сессии:', error);
+        alert('Не удалось загрузить детали сессии');
+      }
+    }
+    
+    // Показать подтверждение удаления
+    function showDeleteConfirmation(event) {
+      const clientId = event.target.getAttribute('data-id');
+      currentSessionId = clientId;
+      deleteClientId.textContent = clientId;
+      deleteModal.classList.add('visible');
+    }
+    
+    // Удаление сессии
+    async function deleteSession() {
+      if (!currentSessionId) return;
+      
+      try {
+        const response = await fetch(`/api/sessions/${currentSessionId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Ошибка при удалении сессии');
+        }
+        
+        // Закрываем модальные окна
+        detailsModal.classList.remove('visible');
+        deleteModal.classList.remove('visible');
+        
+        // Обновляем список сессий
+        await loadSessions();
+      } catch (error) {
+        console.error('Ошибка при удалении сессии:', error);
+        alert('Не удалось удалить сессию');
+      }
+    }
+    
+    // Выход из системы
+    async function logout() {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Ошибка при выходе из системы:', error);
+      }
+    }
+    
+    // Обработчики событий
+    document.querySelectorAll('.close-modal').forEach(btn => {
+      btn.addEventListener('click', () => {
+        detailsModal.classList.remove('visible');
+      });
+    });
+    
+    document.querySelectorAll('.close-delete-modal').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deleteModal.classList.remove('visible');
+      });
+    });
+    
+    filterReconnected.addEventListener('change', renderSessions);
+    confirmDeleteBtn.addEventListener('click', deleteSession);
+    deleteSessionBtn.addEventListener('click', () => {
+      deleteClientId.textContent = currentSessionId;
+      detailsModal.classList.remove('visible');
+      deleteModal.classList.add('visible');
+    });
+    logoutBtn.addEventListener('click', logout);
+    
+    // Инициализация страницы
+    document.addEventListener('DOMContentLoaded', loadSessions);
+  </script>
+</body>
+</html> 
