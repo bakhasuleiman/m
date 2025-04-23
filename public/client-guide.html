@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Руководство пользователя - Система мониторинга веб-страниц</title>
+  <title>Инструкция - Система мониторинга</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -26,22 +26,22 @@
     
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.5;
+      line-height: 1.4;
       color: var(--text-color);
       background-color: #f5f5f5;
       padding: 0;
-      overflow-x: hidden;
+      font-size: 14px;
     }
     
     header {
       background-color: #fff;
       border-bottom: 1px solid var(--border-color);
-      padding: 1rem;
+      padding: 0.75rem;
       box-shadow: var(--shadow);
     }
     
     .header-content {
-      max-width: 800px;
+      max-width: 650px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -49,7 +49,7 @@
     }
     
     .logo {
-      font-size: 1.25rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--primary-color);
       display: flex;
@@ -58,10 +58,10 @@
     }
     
     .logo-icon {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       background-color: var(--primary-color);
-      border-radius: 6px;
+      border-radius: 4px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -70,15 +70,15 @@
     }
     
     .container {
-      max-width: 800px;
+      max-width: 650px;
       margin: 0 auto;
-      padding: 2rem 1rem;
+      padding: 1rem;
     }
     
     .page-title {
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: 600;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       color: var(--primary-color);
     }
     
@@ -86,37 +86,37 @@
       background-color: white;
       border-radius: 8px;
       box-shadow: var(--shadow);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
     }
     
     .section-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       color: var(--text-color);
     }
     
     p {
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       color: var(--text-color);
     }
     
     ul {
-      margin-bottom: 1rem;
-      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+      padding-left: 1.25rem;
     }
     
     li {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
     }
     
     .code-block {
       background-color: var(--background-light);
       border: 1px solid var(--border-color);
       border-radius: 4px;
-      padding: 1rem;
-      margin: 1rem 0;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
       font-family: monospace;
       overflow-x: auto;
       white-space: nowrap;
@@ -125,20 +125,21 @@
     .important-note {
       background-color: var(--secondary-color);
       border-left: 4px solid var(--primary-color);
-      padding: 1rem;
-      margin: 1rem 0;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      font-size: 0.9rem;
     }
     
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.25rem;
       background-color: var(--primary-color);
       color: white;
       border: none;
       border-radius: 4px;
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
       transition: background-color 0.2s;
@@ -150,14 +151,14 @@
     }
     
     .btn-copy {
-      margin-top: 1rem;
+      margin-top: 0.5rem;
     }
     
     .alert {
-      padding: 0.75rem 1rem;
+      padding: 0.5rem 0.75rem;
       border-radius: 4px;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.8rem;
       display: none;
     }
     
@@ -167,33 +168,25 @@
       border: 1px solid rgba(67, 160, 71, 0.2);
     }
     
-    .key-combination {
+    .shortcuts {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .key {
       display: inline-block;
       background-color: #f1f1f1;
       border: 1px solid #ddd;
       border-radius: 3px;
-      padding: 2px 5px;
-      font-size: 0.9em;
+      padding: 1px 4px;
+      font-size: 0.8em;
       font-family: monospace;
-    }
-    
-    .keyboard-shortcuts {
-      margin-top: 1rem;
-    }
-    
-    .shortcut-row {
-      display: flex;
-      margin-bottom: 0.5rem;
-    }
-    
-    .shortcut-key {
-      width: 120px;
-      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <!-- Хедер -->
   <header>
     <div class="header-content">
       <div class="logo">
@@ -203,81 +196,45 @@
     </div>
   </header>
   
-  <!-- Основной контент -->
   <div class="container">
-    <h1 class="page-title">Руководство пользователя</h1>
-    
     <div id="success-alert" class="alert alert-success">
       Код скопирован в буфер обмена
     </div>
     
     <div class="guide-section">
-      <h2 class="section-title">Добро пожаловать в систему мониторинга</h2>
-      <p>Данная система позволяет администраторам отслеживать содержимое веб-страниц и взаимодействовать с пользователями в режиме реального времени.</p>
-      <p>Это руководство поможет вам подключить систему мониторинга к вашему сайту.</p>
-    </div>
-    
-    <div class="guide-section" id="installation-section">
       <h2 class="section-title">Подключение системы мониторинга</h2>
-      <p>Существует несколько способов подключения системы мониторинга:</p>
+      <p>Для быстрого подключения просто введите букмарклет в адресную строку вашего браузера:</p>
       
-      <h3 class="section-title">Метод 1: Использование уникального кода</h3>
-      <p>Самый простой способ подключения — использовать следующий уникальный код:</p>
+      <div class="code-block" id="bookmarklet-block">javascript:import('<span id="base-url-display">${window.location.origin}</span>/<span id="access-code-url">YOUR_CODE_HERE</span>')</div>
       
-      <div class="code-block" id="access-code-block">
-        <span id="access-code">YOUR_CODE_HERE</span>
-      </div>
-      
-      <button id="copy-code-btn" class="btn btn-copy">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button id="copy-bookmarklet-btn" class="btn btn-copy">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
-        Копировать код
+        Копировать
       </button>
       
-      <p>Введите этот код в адресной строке вашего браузера на странице, которую нужно мониторить:</p>
-      <div class="code-block">https://yourwebsite.com/<span id="access-code-url">YOUR_CODE_HERE</span></div>
-      
       <div class="important-note">
-        <strong>Важно:</strong> Данный код является уникальным. Не передавайте его третьим лицам.
+        <strong>Важно:</strong> Система автоматически перезапускается при обновлении страницы
       </div>
     </div>
     
     <div class="guide-section">
-      <h2 class="section-title">Функции клиента мониторинга</h2>
-      <p>После установки клиент мониторинга будет работать в фоновом режиме. Вот несколько важных особенностей:</p>
-      
-      <ul>
-        <li><strong>Автоматическая перезагрузка:</strong> Клиент автоматически перезапускается при обновлении страницы.</li>
-        <li><strong>Горячие клавиши:</strong> Используйте комбинации клавиш для управления клиентом.</li>
-        <li><strong>Просмотр сообщений:</strong> Вы можете просматривать историю сообщений от администратора.</li>
-      </ul>
-      
-      <h3 class="section-title">Горячие клавиши</h3>
-      <div class="keyboard-shortcuts">
-        <div class="shortcut-row">
-          <div class="shortcut-key"><span class="key-combination">Shift + M</span></div>
-          <div>Показать/скрыть историю сообщений</div>
-        </div>
-        <div class="shortcut-row">
-          <div class="shortcut-key"><span class="key-combination">↑</span> / <span class="key-combination">↓</span></div>
-          <div>Навигация по истории сообщений</div>
-        </div>
-        <div class="shortcut-row">
-          <div class="shortcut-key"><span class="key-combination">+</span> / <span class="key-combination">-</span></div>
-          <div>Изменить размер текста сообщений</div>
-        </div>
-        <div class="shortcut-row">
-          <div class="shortcut-key"><span class="key-combination">Esc</span></div>
-          <div>Скрыть сообщение или историю</div>
-        </div>
+      <h2 class="section-title">Горячие клавиши</h2>
+      <div class="shortcuts">
+        <div><span class="key">Shift</span> + <span class="key">M</span></div>
+        <div>Показать/скрыть историю сообщений</div>
+        
+        <div><span class="key">↑</span> / <span class="key">↓</span></div>
+        <div>Навигация по сообщениям</div>
+        
+        <div><span class="key">+</span> / <span class="key">-</span></div>
+        <div>Изменить размер текста</div>
+        
+        <div><span class="key">Esc</span></div>
+        <div>Скрыть сообщение или историю</div>
       </div>
-    </div>
-    
-    <div class="guide-section">
-      <h2 class="section-title">Техническая поддержка</h2>
-      <p>Если у вас возникли вопросы или проблемы с использованием системы мониторинга, обратитесь к администратору вашей организации.</p>
     </div>
   </div>
   
@@ -302,24 +259,35 @@
         el.textContent = accessCode;
       });
       
-      // Генерируем ссылку с кодом
-      document.getElementById('access-code-block').textContent = accessCode;
+      // Обновляем базовый URL
+      document.getElementById('base-url-display').textContent = window.location.origin;
+      
+      // Генерируем полный букмарклет
+      const bookmarkletCode = `javascript:import('${window.location.origin}/${accessCode}')`;
     }
     
-    // Копирование кода в буфер обмена
-    document.getElementById('copy-code-btn').addEventListener('click', function() {
-      const code = document.getElementById('access-code').textContent;
-      navigator.clipboard.writeText(code)
+    // Копирование букмарклета в буфер обмена
+    document.getElementById('copy-bookmarklet-btn').addEventListener('click', function() {
+      const baseUrl = document.getElementById('base-url-display').textContent;
+      const code = document.getElementById('access-code-url').textContent;
+      const bookmarklet = `javascript:import('${baseUrl}/${code}')`;
+      copyToClipboard(bookmarklet, 'Букмарклет скопирован в буфер обмена');
+    });
+    
+    // Функция для копирования в буфер обмена с выводом уведомления
+    function copyToClipboard(text, message) {
+      navigator.clipboard.writeText(text)
         .then(() => {
           // Показать уведомление об успешном копировании
           const successAlert = document.getElementById('success-alert');
+          successAlert.textContent = message || 'Скопировано в буфер обмена';
           successAlert.style.display = 'block';
           setTimeout(() => {
             successAlert.style.display = 'none';
           }, 3000);
         })
-        .catch(err => console.error('Ошибка при копировании кода:', err));
-    });
+        .catch(err => console.error('Ошибка при копировании:', err));
+    }
   </script>
 </body>
 </html> 
