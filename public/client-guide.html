@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Руководство пользователя - Система мониторинга веб-страниц</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #5046e5;
+      --primary-light: #6e66ff;
+      --secondary-color: #f0f0ff;
+      --text-color: #333;
+      --text-light: #666;
+      --border-color: #e0e0e0;
+      --background-light: #f9f9ff;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --success-color: #43a047;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #f5f5f5;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+    }
+    
+    .header-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+    
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--primary-color);
+    }
+    
+    .guide-section {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+    
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+    
+    ul {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+    
+    li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .code-block {
+      background-color: var(--background-light);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: monospace;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    
+    .important-note {
+      background-color: var(--secondary-color);
+      border-left: 4px solid var(--primary-color);
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      text-decoration: none;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .btn-copy {
+      margin-top: 1rem;
+    }
+    
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+    
+    .alert-success {
+      background-color: rgba(67, 160, 71, 0.1);
+      color: var(--success-color);
+      border: 1px solid rgba(67, 160, 71, 0.2);
+    }
+    
+    .key-combination {
+      display: inline-block;
+      background-color: #f1f1f1;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 2px 5px;
+      font-size: 0.9em;
+      font-family: monospace;
+    }
+    
+    .keyboard-shortcuts {
+      margin-top: 1rem;
+    }
+    
+    .shortcut-row {
+      display: flex;
+      margin-bottom: 0.5rem;
+    }
+    
+    .shortcut-key {
+      width: 120px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <!-- Хедер -->
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span>Web Monitoring</span>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Основной контент -->
+  <div class="container">
+    <h1 class="page-title">Руководство пользователя</h1>
+    
+    <div id="success-alert" class="alert alert-success">
+      Код скопирован в буфер обмена
+    </div>
+    
+    <div class="guide-section">
+      <h2 class="section-title">Добро пожаловать в систему мониторинга</h2>
+      <p>Данная система позволяет администраторам отслеживать содержимое веб-страниц и взаимодействовать с пользователями в режиме реального времени.</p>
+      <p>Это руководство поможет вам подключить систему мониторинга к вашему сайту.</p>
+    </div>
+    
+    <div class="guide-section" id="installation-section">
+      <h2 class="section-title">Подключение системы мониторинга</h2>
+      <p>Существует несколько способов подключения системы мониторинга:</p>
+      
+      <h3 class="section-title">Метод 1: Использование уникального кода</h3>
+      <p>Самый простой способ подключения — использовать следующий уникальный код:</p>
+      
+      <div class="code-block" id="access-code-block">
+        <span id="access-code">YOUR_CODE_HERE</span>
+      </div>
+      
+      <button id="copy-code-btn" class="btn btn-copy">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Копировать код
+      </button>
+      
+      <p>Введите этот код в адресной строке вашего браузера на странице, которую нужно мониторить:</p>
+      <div class="code-block">https://yourwebsite.com/<span id="access-code-url">YOUR_CODE_HERE</span></div>
+      
+      <div class="important-note">
+        <strong>Важно:</strong> Данный код является уникальным. Не передавайте его третьим лицам.
+      </div>
+    </div>
+    
+    <div class="guide-section">
+      <h2 class="section-title">Функции клиента мониторинга</h2>
+      <p>После установки клиент мониторинга будет работать в фоновом режиме. Вот несколько важных особенностей:</p>
+      
+      <ul>
+        <li><strong>Автоматическая перезагрузка:</strong> Клиент автоматически перезапускается при обновлении страницы.</li>
+        <li><strong>Горячие клавиши:</strong> Используйте комбинации клавиш для управления клиентом.</li>
+        <li><strong>Просмотр сообщений:</strong> Вы можете просматривать историю сообщений от администратора.</li>
+      </ul>
+      
+      <h3 class="section-title">Горячие клавиши</h3>
+      <div class="keyboard-shortcuts">
+        <div class="shortcut-row">
+          <div class="shortcut-key"><span class="key-combination">Shift + M</span></div>
+          <div>Показать/скрыть историю сообщений</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-key"><span class="key-combination">↑</span> / <span class="key-combination">↓</span></div>
+          <div>Навигация по истории сообщений</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-key"><span class="key-combination">+</span> / <span class="key-combination">-</span></div>
+          <div>Изменить размер текста сообщений</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-key"><span class="key-combination">Esc</span></div>
+          <div>Скрыть сообщение или историю</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="guide-section">
+      <h2 class="section-title">Техническая поддержка</h2>
+      <p>Если у вас возникли вопросы или проблемы с использованием системы мониторинга, обратитесь к администратору вашей организации.</p>
+    </div>
+  </div>
+  
+  <script>
+    // Получаем код из URL
+    function getAccessCodeFromUrl() {
+      const pathParts = window.location.pathname.split('/');
+      // Ищем последний непустой сегмент пути
+      for (let i = pathParts.length - 1; i >= 0; i--) {
+        if (pathParts[i] && pathParts[i].length === 3) {
+          return pathParts[i];
+        }
+      }
+      return null;
+    }
+    
+    // Устанавливаем код доступа на странице
+    const accessCode = getAccessCodeFromUrl();
+    if (accessCode) {
+      const codeElements = document.querySelectorAll('#access-code, #access-code-url');
+      codeElements.forEach(el => {
+        el.textContent = accessCode;
+      });
+      
+      // Генерируем ссылку с кодом
+      document.getElementById('access-code-block').textContent = accessCode;
+    }
+    
+    // Копирование кода в буфер обмена
+    document.getElementById('copy-code-btn').addEventListener('click', function() {
+      const code = document.getElementById('access-code').textContent;
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          // Показать уведомление об успешном копировании
+          const successAlert = document.getElementById('success-alert');
+          successAlert.style.display = 'block';
+          setTimeout(() => {
+            successAlert.style.display = 'none';
+          }, 3000);
+        })
+        .catch(err => console.error('Ошибка при копировании кода:', err));
+    });
+  </script>
+</body>
+</html> 

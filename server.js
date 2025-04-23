@@ -139,6 +139,19 @@ const port = process.env.PORT || 3000;
 // Статические файлы
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Обработчик для страницы инструкций с кодом доступа
+app.get('/guide/:code([a-z0-9]{3})', (req, res) => {
+  const code = req.params.code;
+  
+  // Проверяем существование кода
+  if (accessCodes.has(code)) {
+    res.sendFile(path.join(__dirname, 'public', 'client-guide.html'));
+  } else {
+    // Код не существует
+    res.status(404).send('Код не найден');
+  }
+});
+
 // Обработчик для уникальных кодов доступа
 app.get('/:code([a-z0-9]{3})', (req, res) => {
   const code = req.params.code;
