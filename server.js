@@ -16,12 +16,25 @@ function hashPassword(password, salt) {
 
 // Константы для аутентификации
 const ADMIN_PASSWORD = 'Z6489092Akumi!s@'; // Установленный пароль
+const ADMIN_LOGIN = 'Mrak'; // Логин администратора
 const SALT = 'f8a3j2k4l9z7m5n6'; // Соль для хеширования (в реальном проекте должна быть защищена)
 const SESSION_SECRET = crypto.randomBytes(32).toString('hex');
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 часа
 
 // Хеширование пароля администратора
 const ADMIN_PASSWORD_HASH = hashPassword(ADMIN_PASSWORD, SALT);
+
+// Хранилище для пользователей (логин => пользователь)
+const users = new Map();
+// Добавляем учетную запись администратора
+users.set(ADMIN_LOGIN.toLowerCase(), {
+  login: ADMIN_LOGIN,
+  passwordHash: ADMIN_PASSWORD_HASH,
+  isAdmin: true,
+  isActive: true,
+  createdAt: new Date().toISOString(),
+  lastLogin: null
+});
 
 // Хранилище для активных сессий
 const activeSessions = new Map();
@@ -105,7 +118,18 @@ const requireAuth = (req, res, next) => {
   // Обновляем время истечения сессии
   session.expires = now + SESSION_MAX_AGE;
   activeSessions.set(sessionId, session);
+
+  // Добавляем данные пользователя в объект запроса
+  req.user = users.get(session.login.toLowerCase());
   
+  next();
+};
+
+// Middleware для проверки прав администратора
+const requireAdmin = (req, res, next) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора.' });
+  }
   next();
 };
 
@@ -787,52 +811,193 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// API для аутентификации
-app.post('/api/login', (req, res) => {
-  const { password } = req.body;
+// API для аутентификации пользователей
+app.post('/api/login', express.json(), (req, res) => {
+  const { login, password } = req.body;
   
-  if (!password) {
-    return res.status(400).json({ success: false, message: 'Пароль не указан' });
+  if (!login || !password) {
+    return res.status(400).json({ error: 'Логин и пароль обязательны' });
   }
   
-  // Хешируем введённый пароль и сравниваем с хешем правильного пароля
-  const passwordHash = hashPassword(password, SALT);
+  const user = users.get(login.toLowerCase());
   
-  if (passwordHash !== ADMIN_PASSWORD_HASH) {
-    console.log('Неудачная попытка входа в админ-панель');
-    return res.status(401).json({ success: false, message: 'Неверный пароль' });
+  if (!user || user.passwordHash !== hashPassword(password, SALT) || !user.isActive) {
+    return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
   
-  // Создаём сессию
-  const sessionId = uuidv4();
+  // Создаем новую сессию
+  const sessionId = crypto.randomBytes(32).toString('hex');
   const expires = Date.now() + SESSION_MAX_AGE;
   
-  activeSessions.set(sessionId, { expires });
+  activeSessions.set(sessionId, {
+    login: user.login,
+    expires,
+    isAdmin: user.isAdmin
+  });
   
-  // Устанавливаем cookie с идентификатором сессии
-  res.setHeader('Set-Cookie', `adminSessionId=${sessionId}; Path=/; HttpOnly; Max-Age=${SESSION_MAX_AGE / 1000}; SameSite=Strict`);
+  // Обновляем время последнего входа
+  user.lastLogin = new Date().toISOString();
+  users.set(login.toLowerCase(), user);
   
-  console.log('Успешный вход в админ-панель');
-  res.status(200).json({ success: true });
+  // Устанавливаем cookie с sessionId
+  res.cookie('adminSessionId', sessionId, { 
+    maxAge: SESSION_MAX_AGE,
+    httpOnly: true,
+    path: '/'
+  });
+  
+  res.json({
+    success: true,
+    user: {
+      login: user.login,
+      isAdmin: user.isAdmin
+    }
+  });
 });
 
-// Выход из админ-панели
-app.get('/api/logout', (req, res) => {
+// Выход из системы
+app.post('/api/logout', (req, res) => {
   const sessionId = req.cookies['adminSessionId'];
   
   if (sessionId) {
     activeSessions.delete(sessionId);
+    res.clearCookie('adminSessionId');
   }
   
-  // Удаляем cookie сессии
-  res.setHeader('Set-Cookie', 'adminSessionId=; Path=/; HttpOnly; Max-Age=0');
-  
-  res.redirect('/login');
+  res.json({ success: true });
 });
 
 // Защищаем маршрут админ-панели
 app.get('/admin', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// API для управления пользователями (только для администраторов)
+app.get('/admin/users', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'users.html'));
+});
+
+// Получение списка пользователей
+app.get('/api/users', requireAuth, requireAdmin, (req, res) => {
+  const usersList = Array.from(users.values()).map(user => ({
+    login: user.login,
+    isAdmin: user.isAdmin,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    lastLogin: user.lastLogin
+  }));
+  
+  res.json(usersList);
+});
+
+// Создание нового пользователя
+app.post('/api/users', requireAuth, requireAdmin, express.json(), (req, res) => {
+  const { login, password, isAdmin } = req.body;
+  
+  if (!login || !password) {
+    return res.status(400).json({ error: 'Логин и пароль обязательны' });
+  }
+  
+  if (users.has(login.toLowerCase())) {
+    return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+  }
+  
+  const passwordHash = hashPassword(password, SALT);
+  const newUser = {
+    login,
+    passwordHash,
+    isAdmin: Boolean(isAdmin),
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    lastLogin: null
+  };
+  
+  users.set(login.toLowerCase(), newUser);
+  
+  res.status(201).json({
+    login: newUser.login,
+    isAdmin: newUser.isAdmin,
+    isActive: newUser.isActive,
+    createdAt: newUser.createdAt
+  });
+});
+
+// Изменение статуса пользователя (активация/деактивация)
+app.put('/api/users/:login/status', requireAuth, requireAdmin, express.json(), (req, res) => {
+  const { login } = req.params;
+  const { isActive } = req.body;
+  
+  if (!users.has(login.toLowerCase())) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+  
+  const user = users.get(login.toLowerCase());
+  
+  // Не разрешаем деактивировать самого себя
+  if (login.toLowerCase() === req.user.login.toLowerCase() && isActive === false) {
+    return res.status(400).json({ error: 'Невозможно деактивировать свою учетную запись' });
+  }
+  
+  // Не разрешаем деактивировать главного администратора
+  if (login.toLowerCase() === ADMIN_LOGIN.toLowerCase() && isActive === false) {
+    return res.status(400).json({ error: 'Невозможно деактивировать главного администратора' });
+  }
+  
+  user.isActive = Boolean(isActive);
+  users.set(login.toLowerCase(), user);
+  
+  // Удаляем все активные сессии пользователя при деактивации
+  if (!user.isActive) {
+    for (const [sessionId, session] of activeSessions) {
+      if (session.login.toLowerCase() === login.toLowerCase()) {
+        activeSessions.delete(sessionId);
+      }
+    }
+  }
+  
+  res.json({
+    login: user.login,
+    isAdmin: user.isAdmin,
+    isActive: user.isActive
+  });
+});
+
+// Удаление пользователя
+app.delete('/api/users/:login', requireAuth, requireAdmin, (req, res) => {
+  const { login } = req.params;
+  
+  if (!users.has(login.toLowerCase())) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+  
+  // Не разрешаем удалять самого себя
+  if (login.toLowerCase() === req.user.login.toLowerCase()) {
+    return res.status(400).json({ error: 'Невозможно удалить свою учетную запись' });
+  }
+  
+  // Не разрешаем удалять главного администратора
+  if (login.toLowerCase() === ADMIN_LOGIN.toLowerCase()) {
+    return res.status(400).json({ error: 'Невозможно удалить главного администратора' });
+  }
+  
+  users.delete(login.toLowerCase());
+  
+  // Удаляем все активные сессии пользователя
+  for (const [sessionId, session] of activeSessions) {
+    if (session.login.toLowerCase() === login.toLowerCase()) {
+      activeSessions.delete(sessionId);
+    }
+  }
+  
+  res.json({ success: true });
+});
+
+// Получение информации о текущем пользователе
+app.get('/api/current-user', requireAuth, (req, res) => {
+  res.json({
+    login: req.user.login,
+    isAdmin: req.user.isAdmin
+  });
 });
 
 server.listen(port, () => {

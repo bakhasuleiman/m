@@ -145,14 +145,19 @@
         <span>Web Monitoring</span>
       </div>
       <h1 class="login-title">Вход в админ-панель</h1>
-      <p class="login-subtitle">Введите пароль для доступа</p>
+      <p class="login-subtitle">Введите логин и пароль для доступа</p>
     </div>
     
     <form id="login-form">
       <div class="form-group">
+        <label for="login" class="form-label">Логин</label>
+        <input type="text" id="login" name="login" class="form-control" required>
+      </div>
+      
+      <div class="form-group">
         <label for="password" class="form-label">Пароль</label>
         <input type="password" id="password" name="password" class="form-control" required>
-        <div id="error-message" class="error-message">Неверный пароль</div>
+        <div id="error-message" class="error-message">Неверный логин или пароль</div>
       </div>
       
       <button type="submit" class="btn">Войти</button>
@@ -163,6 +168,7 @@
     document.getElementById('login-form').addEventListener('submit', async function(event) {
       event.preventDefault();
       
+      const login = document.getElementById('login').value;
       const password = document.getElementById('password').value;
       const errorMessage = document.getElementById('error-message');
       
@@ -172,7 +178,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ login, password })
         });
         
         if (response.ok) {
@@ -180,6 +186,8 @@
           window.location.href = '/admin';
         } else {
           // Показываем ошибку
+          const data = await response.json();
+          errorMessage.textContent = data.error || 'Неверный логин или пароль';
           errorMessage.classList.add('visible');
           document.getElementById('password').value = '';
         }

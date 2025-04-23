@@ -657,13 +657,14 @@
       </div>
       
       <div class="nav-links">
-        <a href="/admin" class="nav-link active">Мониторинг</a>
+        <a href="/admin" class="nav-link active">Монитор</a>
         <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
+        <a href="/admin/users" class="nav-link">Пользователи</a>
+        <button id="logout-btn" class="logout-btn">Выйти</button>
       </div>
       
       <div class="header-right">
         <div id="connection-status">Подключение...</div>
-        <a href="/api/logout" class="logout-btn">Выйти</a>
       </div>
     </div>
   </header>
@@ -1893,6 +1894,21 @@
       
       // Загружаем историю сообщений
       loadMessageHistory(selectedClientId);
+    });
+
+    // Обработчик выхода из системы
+    document.getElementById('logout-btn').addEventListener('click', async function() {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Ошибка при выходе из системы:', error);
+      }
     });
   </script>
   

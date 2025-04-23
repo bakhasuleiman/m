@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Управление пользователями - Система мониторинга веб-страниц</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #5046e5;
+      --primary-light: #6e66ff;
+      --secondary-color: #f0f0ff;
+      --text-color: #333;
+      --text-light: #666;
+      --border-color: #e0e0e0;
+      --danger-color: #e53935;
+      --warning-color: #f57c00;
+      --success-color: #43a047;
+      --background-light: #f9f9ff;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #f5f5f5;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .nav-link {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .nav-link:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .nav-link.active {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #f44336;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+      font-weight: 600;
+      color: var(--text-light);
+      background-color: var(--background-light);
+    }
+    
+    tr:hover {
+      background-color: var(--background-light);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .status-active {
+      background-color: rgba(67, 160, 71, 0.1);
+      color: var(--success-color);
+    }
+    
+    .status-inactive {
+      background-color: rgba(229, 57, 53, 0.1);
+      color: var(--danger-color);
+    }
+    
+    .status-admin {
+      background-color: rgba(80, 70, 229, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .action-btn {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border-color);
+      background-color: white;
+      color: var(--text-color);
+      margin-right: 0.25rem;
+    }
+    
+    .action-btn:hover {
+      background-color: var(--background-light);
+    }
+    
+    .action-btn-danger {
+      color: var(--danger-color);
+      border-color: var(--danger-color);
+    }
+    
+    .action-btn-danger:hover {
+      background-color: rgba(229, 57, 53, 0.1);
+    }
+    
+    .action-btn-success {
+      color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    
+    .action-btn-success:hover {
+      background-color: rgba(67, 160, 71, 0.1);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    .close-modal {
+      font-size: 1.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary-color);
+    }
+    
+    .form-check {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .form-check-input {
+      margin-right: 0.5rem;
+    }
+    
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .error-message {
+      color: var(--danger-color);
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    .error-message.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span>Система мониторинга веб-страниц</span>
+      </div>
+      <div class="nav-links">
+        <a href="/admin" class="nav-link">Монитор</a>
+        <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
+        <a href="/admin/users" class="nav-link active">Пользователи</a>
+        <button id="logout-btn" class="nav-link">Выйти</button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title">Управление пользователями</h1>
+        <button id="add-user-btn" class="btn btn-primary">Добавить пользователя</button>
+      </div>
+      
+      <table id="users-table">
+        <thead>
+          <tr>
+            <th>Логин</th>
+            <th>Статус</th>
+            <th>Права</th>
+            <th>Дата создания</th>
+            <th>Последний вход</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Данные будут загружены через JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Модальное окно для создания пользователя -->
+  <div id="add-user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Добавить пользователя</h2>
+        <span class="close-modal" id="close-add-modal">&times;</span>
+      </div>
+      
+      <form id="add-user-form">
+        <div class="form-group">
+          <label for="new-login" class="form-label">Логин</label>
+          <input type="text" id="new-login" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="new-password" class="form-label">Пароль</label>
+          <input type="password" id="new-password" class="form-control" required>
+        </div>
+        
+        <div class="form-check">
+          <input type="checkbox" id="new-is-admin" class="form-check-input">
+          <label for="new-is-admin" class="form-check-label">Права администратора</label>
+        </div>
+        
+        <div id="add-error-message" class="error-message"></div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn" id="cancel-add">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    // Глобальные переменные
+    let users = [];
+    const currentUserLogin = ''; // Будет установлено при загрузке данных
+    
+    // DOM элементы
+    const usersTable = document.getElementById('users-table');
+    const addUserBtn = document.getElementById('add-user-btn');
+    const addUserModal = document.getElementById('add-user-modal');
+    const closeAddModal = document.getElementById('close-add-modal');
+    const cancelAddBtn = document.getElementById('cancel-add');
+    const addUserForm = document.getElementById('add-user-form');
+    const addErrorMessage = document.getElementById('add-error-message');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    // Форматирование даты
+    function formatDate(dateString) {
+      if (!dateString) return 'Никогда';
+      const date = new Date(dateString);
+      return date.toLocaleString('ru-RU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // Загрузка списка пользователей
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/users');
+        
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки списка пользователей');
+        }
+        
+        users = await response.json();
+        renderUsersTable();
+      } catch (error) {
+        console.error('Ошибка при загрузке пользователей:', error);
+      }
+    }
+    
+    // Отрисовка таблицы пользователей
+    function renderUsersTable() {
+      const tbody = usersTable.querySelector('tbody');
+      tbody.innerHTML = '';
+      
+      users.forEach(user => {
+        const tr = document.createElement('tr');
+        
+        // Определяем, является ли пользователь текущим (логин совпадает)
+        const isCurrentUser = user.login.toLowerCase() === currentUserLogin.toLowerCase();
+        const isMainAdmin = user.login === 'Mrak';
+        
+        tr.innerHTML = `
+          <td>${user.login}</td>
+          <td>
+            <span class="status-badge ${user.isActive ? 'status-active' : 'status-inactive'}">
+              ${user.isActive ? 'Активен' : 'Неактивен'}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge ${user.isAdmin ? 'status-admin' : ''}">
+              ${user.isAdmin ? 'Администратор' : 'Пользователь'}
+            </span>
+          </td>
+          <td>${formatDate(user.createdAt)}</td>
+          <td>${formatDate(user.lastLogin)}</td>
+          <td>
+            ${!user.isActive ? 
+              `<button class="action-btn action-btn-success activate-user" data-login="${user.login}">Активировать</button>` : 
+              (!isMainAdmin && !isCurrentUser ? 
+                `<button class="action-btn action-btn-danger deactivate-user" data-login="${user.login}">Деактивировать</button>` : 
+                ''
+              )
+            }
+            ${!isMainAdmin && !isCurrentUser ? 
+              `<button class="action-btn action-btn-danger delete-user" data-login="${user.login}">Удалить</button>` : 
+              ''
+            }
+          </td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+      
+      // Добавляем обработчики событий для кнопок
+      document.querySelectorAll('.activate-user').forEach(btn => {
+        btn.addEventListener('click', activateUser);
+      });
+      
+      document.querySelectorAll('.deactivate-user').forEach(btn => {
+        btn.addEventListener('click', deactivateUser);
+      });
+      
+      document.querySelectorAll('.delete-user').forEach(btn => {
+        btn.addEventListener('click', deleteUser);
+      });
+    }
+    
+    // Активация пользователя
+    async function activateUser(event) {
+      const login = event.target.dataset.login;
+      
+      try {
+        const response = await fetch(`/api/users/${login}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ isActive: true })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Ошибка активации пользователя');
+        }
+        
+        // Обновляем список пользователей
+        await loadUsers();
+      } catch (error) {
+        console.error('Ошибка при активации пользователя:', error);
+        alert(error.message);
+      }
+    }
+    
+    // Деактивация пользователя
+    async function deactivateUser(event) {
+      const login = event.target.dataset.login;
+      
+      if (!confirm(`Вы уверены, что хотите деактивировать пользователя "${login}"?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/users/${login}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ isActive: false })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Ошибка деактивации пользователя');
+        }
+        
+        // Обновляем список пользователей
+        await loadUsers();
+      } catch (error) {
+        console.error('Ошибка при деактивации пользователя:', error);
+        alert(error.message);
+      }
+    }
+    
+    // Удаление пользователя
+    async function deleteUser(event) {
+      const login = event.target.dataset.login;
+      
+      if (!confirm(`Вы уверены, что хотите удалить пользователя "${login}"? Это действие нельзя отменить.`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/users/${login}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Ошибка удаления пользователя');
+        }
+        
+        // Обновляем список пользователей
+        await loadUsers();
+      } catch (error) {
+        console.error('Ошибка при удалении пользователя:', error);
+        alert(error.message);
+      }
+    }
+    
+    // Добавление нового пользователя
+    async function addUser(event) {
+      event.preventDefault();
+      
+      const login = document.getElementById('new-login').value.trim();
+      const password = document.getElementById('new-password').value;
+      const isAdmin = document.getElementById('new-is-admin').checked;
+      
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ login, password, isAdmin })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Ошибка создания пользователя');
+        }
+        
+        // Закрываем модальное окно и сбрасываем форму
+        addUserModal.style.display = 'none';
+        addUserForm.reset();
+        addErrorMessage.textContent = '';
+        addErrorMessage.classList.remove('visible');
+        
+        // Обновляем список пользователей
+        await loadUsers();
+      } catch (error) {
+        console.error('Ошибка при создании пользователя:', error);
+        addErrorMessage.textContent = error.message;
+        addErrorMessage.classList.add('visible');
+      }
+    }
+    
+    // Выход из системы
+    async function logout() {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Ошибка при выходе из системы');
+        }
+        
+        window.location.href = '/login';
+      } catch (error) {
+        console.error('Ошибка при выходе из системы:', error);
+      }
+    }
+    
+    // Обработчики событий
+    addUserBtn.addEventListener('click', function() {
+      addUserModal.style.display = 'block';
+    });
+    
+    closeAddModal.addEventListener('click', function() {
+      addUserModal.style.display = 'none';
+      addUserForm.reset();
+      addErrorMessage.textContent = '';
+      addErrorMessage.classList.remove('visible');
+    });
+    
+    cancelAddBtn.addEventListener('click', function() {
+      addUserModal.style.display = 'none';
+      addUserForm.reset();
+      addErrorMessage.textContent = '';
+      addErrorMessage.classList.remove('visible');
+    });
+    
+    window.addEventListener('click', function(event) {
+      if (event.target === addUserModal) {
+        addUserModal.style.display = 'none';
+        addUserForm.reset();
+        addErrorMessage.textContent = '';
+        addErrorMessage.classList.remove('visible');
+      }
+    });
+    
+    addUserForm.addEventListener('submit', addUser);
+    logoutBtn.addEventListener('click', logout);
+    
+    // Инициализация страницы
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Загружаем список пользователей
+      await loadUsers();
+      
+      // Проверяем, получили ли мы информацию о текущем пользователе
+      try {
+        const response = await fetch('/api/current-user');
+        
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.login) {
+            // Сохраняем логин текущего пользователя
+            currentUserLogin = userData.login;
+            // Перерендериваем таблицу с учетом текущего пользователя
+            renderUsersTable();
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке информации о текущем пользователе:', error);
+      }
+    });
+  </script>
+</body>
+</html> 
