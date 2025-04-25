@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Экспорт/Импорт данных - Система мониторинга веб-страниц</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #5046e5;
+      --primary-light: #6e66ff;
+      --secondary-color: #f0f0ff;
+      --text-color: #333;
+      --text-light: #666;
+      --border-color: #e0e0e0;
+      --danger-color: #e53935;
+      --warning-color: #f57c00;
+      --success-color: #43a047;
+      --background-light: #f9f9ff;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #f5f5f5;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .nav-link {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .nav-link:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .nav-link.active {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    
+    .card-description {
+      margin-bottom: 1rem;
+      color: var(--text-light);
+    }
+    
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .btn-secondary {
+      background-color: #f5f5f5;
+      color: var(--text-color);
+      border-color: var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e9e9e9;
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #f44336;
+    }
+    
+    .btn-warning {
+      background-color: var(--warning-color);
+      color: white;
+    }
+    
+    .btn-warning:hover {
+      background-color: #ff9800;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem;
+      border-radius: 4px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      transition: all 0.3s;
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    
+    .notification.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .notification-success {
+      background-color: #e8f5e9;
+      border-left: 4px solid var(--success-color);
+      color: var(--success-color);
+    }
+    
+    .notification-error {
+      background-color: #ffebee;
+      border-left: 4px solid var(--danger-color);
+      color: var(--danger-color);
+    }
+    
+    .notification-warning {
+      background-color: #fff3e0;
+      border-left: 4px solid var(--warning-color);
+      color: var(--warning-color);
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+    
+    .form-text {
+      color: var(--text-light);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    
+    .file-input-container {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    
+    .file-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.875rem;
+      background-color: #f5f5f5;
+    }
+    
+    .checkbox-group {
+      margin-bottom: 1rem;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .checkbox-label input {
+      margin-right: 0.5rem;
+    }
+    
+    .progress-container {
+      margin: 1.5rem 0;
+      display: none;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    .progress-text {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+    
+    .data-info {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+    
+    .data-count {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .two-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      .two-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .json-viewer {
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.875rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .export-timestamp {
+      font-size: 0.875rem;
+      color: var(--text-light);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span>Web Monitoring</span>
+      </div>
+      <div class="nav-links">
+        <a href="/admin" class="nav-link">Панель управления</a>
+        <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
+        <a href="/admin/users" class="nav-link">Пользователи</a>
+        <a href="/admin/sessions" class="nav-link">Сессии</a>
+        <a href="/admin/export-import" class="nav-link active">Экспорт/Импорт</a>
+        <button id="logout-btn" class="nav-link">Выйти</button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div class="two-columns">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Экспорт данных</h2>
+        </div>
+        <p class="card-description">
+          Экспортируйте данные системы для резервного копирования или миграции. Данные будут сохранены в виде JSON-файла.
+        </p>
+        
+        <div class="checkbox-group">
+          <div class="form-label">Выберите данные для экспорта:</div>
+          <label class="checkbox-label">
+            <input type="checkbox" class="export-option" data-type="users" checked>
+            Пользователи
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="export-option" data-type="accessCodes" checked>
+            Коды доступа
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="export-option" data-type="disconnectedSessions" checked>
+            Отключенные сессии
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="export-option" data-type="clientsMessageHistory" checked>
+            История сообщений
+          </label>
+        </div>
+        
+        <div class="data-info" id="export-data-info" style="display: none;">
+          <p>Количество объектов для экспорта:</p>
+          <ul>
+            <li>Пользователи: <span class="data-count" id="users-count">0</span></li>
+            <li>Коды доступа: <span class="data-count" id="access-codes-count">0</span></li>
+            <li>Отключенные сессии: <span class="data-count" id="sessions-count">0</span></li>
+            <li>История сообщений: <span class="data-count" id="messages-count">0</span></li>
+          </ul>
+          <p class="export-timestamp" id="export-timestamp"></p>
+        </div>
+        
+        <div class="form-group">
+          <button id="export-btn" class="btn btn-primary">Экспортировать данные</button>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Импорт данных</h2>
+        </div>
+        <p class="card-description">
+          Импортируйте ранее экспортированные данные. Будьте осторожны, текущие данные могут быть перезаписаны.
+        </p>
+        
+        <div class="file-input-container">
+          <input type="file" id="import-file" class="file-input" accept=".json">
+          <p class="form-text">Выберите JSON-файл с данными для импорта</p>
+        </div>
+        
+        <div class="checkbox-group">
+          <div class="form-label">Выберите данные для импорта:</div>
+          <label class="checkbox-label">
+            <input type="checkbox" class="import-option" data-type="users" checked>
+            Пользователи
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="import-option" data-type="accessCodes" checked>
+            Коды доступа
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="import-option" data-type="disconnectedSessions" checked>
+            Отключенные сессии
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="import-option" data-type="clientsMessageHistory" checked>
+            История сообщений
+          </label>
+        </div>
+        
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="clear-before-import">
+            Очистить существующие данные перед импортом
+          </label>
+          <p class="form-text">При включении этой опции все существующие данные выбранных типов будут удалены перед импортом</p>
+        </div>
+        
+        <div class="data-info" id="import-data-info" style="display: none;">
+          <p>Количество объектов для импорта:</p>
+          <ul>
+            <li>Пользователи: <span class="data-count" id="import-users-count">0</span></li>
+            <li>Коды доступа: <span class="data-count" id="import-access-codes-count">0</span></li>
+            <li>Отключенные сессии: <span class="data-count" id="import-sessions-count">0</span></li>
+            <li>История сообщений: <span class="data-count" id="import-messages-count">0</span></li>
+          </ul>
+          <p class="export-timestamp" id="import-timestamp"></p>
+        </div>
+        
+        <div class="progress-container" id="import-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="import-progress-fill"></div>
+          </div>
+          <div class="progress-text" id="import-progress-text">Импорт данных...</div>
+        </div>
+        
+        <div class="form-group">
+          <button id="import-btn" class="btn btn-warning" disabled>Импортировать данные</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="notification" class="notification"></div>
+  
+  <script>
+    // Обработчик выхода
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Ошибка при выходе:', error);
+        showNotification('Ошибка при выходе из системы', 'error');
+      }
+    });
+    
+    // Функция для показа уведомлений
+    function showNotification(message, type) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = 'notification notification-' + type;
+      notification.classList.add('visible');
+      
+      setTimeout(() => {
+        notification.classList.remove('visible');
+      }, 5000);
+    }
+    
+    // Экспорт данных
+    document.getElementById('export-btn').addEventListener('click', async () => {
+      try {
+        const selectedOptions = [];
+        document.querySelectorAll('.export-option:checked').forEach(option => {
+          selectedOptions.push(option.dataset.type);
+        });
+        
+        if (selectedOptions.length === 0) {
+          return showNotification('Выберите хотя бы один тип данных для экспорта', 'warning');
+        }
+        
+        const response = await fetch('/api/export-data');
+        if (!response.ok) {
+          throw new Error('Ошибка при экспорте данных');
+        }
+        
+        const data = await response.json();
+        const timestamp = new Date().toISOString();
+        
+        // Показываем информацию о данных
+        document.getElementById('users-count').textContent = data.users ? data.users.length : 0;
+        document.getElementById('access-codes-count').textContent = data.accessCodes ? data.accessCodes.length : 0;
+        document.getElementById('sessions-count').textContent = data.disconnectedSessions ? data.disconnectedSessions.length : 0;
+        document.getElementById('messages-count').textContent = data.clientsMessageHistory ? data.clientsMessageHistory.length : 0;
+        document.getElementById('export-timestamp').textContent = `Дата экспорта: ${new Date().toLocaleString()}`;
+        document.getElementById('export-data-info').style.display = 'block';
+        
+        // Фильтруем данные по выбранным опциям
+        const exportData = {};
+        selectedOptions.forEach(option => {
+          if (data[option]) {
+            exportData[option] = data[option];
+          }
+        });
+        
+        // Добавляем метаданные
+        exportData.metadata = {
+          timestamp,
+          version: '1.0',
+          exportDate: new Date().toLocaleString()
+        };
+        
+        // Загружаем файл
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `webmonitoring-export-${new Date().toISOString().replace(/:/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification('Данные успешно экспортированы', 'success');
+      } catch (error) {
+        console.error('Ошибка при экспорте:', error);
+        showNotification(error.message, 'error');
+      }
+    });
+    
+    // Импорт данных - обработка выбора файла
+    document.getElementById('import-file').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        document.getElementById('import-btn').disabled = true;
+        document.getElementById('import-data-info').style.display = 'none';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          
+          // Проверяем валидность данных
+          if (!data || typeof data !== 'object' || !data.metadata) {
+            showNotification('Выбранный файл не содержит корректных данных для импорта', 'error');
+            document.getElementById('import-btn').disabled = true;
+            return;
+          }
+          
+          // Показываем информацию о данных
+          document.getElementById('import-users-count').textContent = data.users ? data.users.length : 0;
+          document.getElementById('import-access-codes-count').textContent = data.accessCodes ? data.accessCodes.length : 0;
+          document.getElementById('import-sessions-count').textContent = data.disconnectedSessions ? data.disconnectedSessions.length : 0;
+          document.getElementById('import-messages-count').textContent = data.clientsMessageHistory ? data.clientsMessageHistory.length : 0;
+          document.getElementById('import-timestamp').textContent = `Дата экспорта: ${data.metadata.exportDate || 'Не указана'}`;
+          document.getElementById('import-data-info').style.display = 'block';
+          
+          // Активируем кнопку импорта
+          document.getElementById('import-btn').disabled = false;
+          
+          // Сохраняем данные для импорта
+          window.importData = data;
+        } catch (error) {
+          console.error('Ошибка при чтении файла:', error);
+          showNotification('Ошибка при чтении файла: ' + error.message, 'error');
+          document.getElementById('import-btn').disabled = true;
+        }
+      };
+      
+      reader.readAsText(file);
+    });
+    
+    // Импорт данных - выполнение импорта
+    document.getElementById('import-btn').addEventListener('click', async () => {
+      if (!window.importData) {
+        return showNotification('Выберите файл для импорта', 'warning');
+      }
+      
+      const selectedOptions = {};
+      document.querySelectorAll('.import-option:checked').forEach(option => {
+        selectedOptions[option.dataset.type] = true;
+      });
+      
+      if (Object.keys(selectedOptions).length === 0) {
+        return showNotification('Выберите хотя бы один тип данных для импорта', 'warning');
+      }
+      
+      // Получаем опцию очистки данных
+      const clearBeforeImport = document.getElementById('clear-before-import').checked;
+      
+      // Показываем прогресс
+      document.getElementById('import-progress').style.display = 'block';
+      document.getElementById('import-progress-fill').style.width = '10%';
+      document.getElementById('import-progress-text').textContent = 'Подготовка к импорту...';
+      
+      try {
+        // Отправляем данные для импорта
+        const response = await fetch('/api/import-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            data: window.importData,
+            importOptions: {
+              ...selectedOptions,
+              clearBeforeImport
+            }
+          })
+        });
+        
+        // Имитируем прогресс
+        document.getElementById('import-progress-fill').style.width = '50%';
+        document.getElementById('import-progress-text').textContent = 'Импортирование данных...';
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Ошибка при импорте данных');
+        }
+        
+        const result = await response.json();
+        
+        // Завершаем прогресс
+        document.getElementById('import-progress-fill').style.width = '100%';
+        document.getElementById('import-progress-text').textContent = 'Импорт завершен!';
+        
+        setTimeout(() => {
+          document.getElementById('import-progress').style.display = 'none';
+          document.getElementById('import-progress-fill').style.width = '0%';
+        }, 2000);
+        
+        // Показываем результат
+        const importedItems = result.importedItems;
+        const importMessage = `Импорт завершен! Импортировано: ${importedItems.users || 0} пользователей, ${importedItems.accessCodes || 0} кодов доступа, ${importedItems.disconnectedSessions || 0} сессий, ${importedItems.clientsMessageHistory || 0} сообщений.`;
+        
+        showNotification(importMessage, 'success');
+        
+        // Сбрасываем форму
+        document.getElementById('import-file').value = '';
+        document.getElementById('import-btn').disabled = true;
+        document.getElementById('import-data-info').style.display = 'none';
+        window.importData = null;
+      } catch (error) {
+        console.error('Ошибка при импорте:', error);
+        document.getElementById('import-progress').style.display = 'none';
+        showNotification(error.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html> 

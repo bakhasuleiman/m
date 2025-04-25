@@ -32,6 +32,7 @@ users.set(ADMIN_LOGIN.toLowerCase(), {
   passwordHash: ADMIN_PASSWORD_HASH,
   isAdmin: true,
   isActive: true,
+  canCreateCodes: true, // Добавляем право на создание кодов доступа
   createdAt: new Date().toISOString(),
   lastLogin: null
 });
@@ -190,6 +191,11 @@ app.get('/api/access-codes', requireAuth, (req, res) => {
 
 // Создание нового кода
 app.post('/api/access-codes', requireAuth, (req, res) => {
+  // Проверяем права на создание кодов
+  if (!(req.user.isAdmin || req.user.canCreateCodes)) {
+    return res.status(403).json({ error: 'У вас нет прав на создание кодов доступа' });
+  }
+  
   const code = createAccessCode();
   res.json({
     code,
@@ -922,6 +928,7 @@ app.get('/api/users', requireAuth, requireAdmin, (req, res) => {
     login: user.login,
     isAdmin: user.isAdmin,
     isActive: user.isActive,
+    canCreateCodes: user.canCreateCodes || false, // Добавляем новое поле
     createdAt: user.createdAt,
     lastLogin: user.lastLogin
   }));
@@ -931,7 +938,7 @@ app.get('/api/users', requireAuth, requireAdmin, (req, res) => {
 
 // Создание нового пользователя
 app.post('/api/users', requireAuth, requireAdmin, express.json(), (req, res) => {
-  const { login, password, isAdmin } = req.body;
+  const { login, password, isAdmin, canCreateCodes } = req.body;
   
   if (!login || !password) {
     return res.status(400).json({ error: 'Логин и пароль обязательны' });
@@ -947,6 +954,7 @@ app.post('/api/users', requireAuth, requireAdmin, express.json(), (req, res) => 
     passwordHash,
     isAdmin: Boolean(isAdmin),
     isActive: true,
+    canCreateCodes: Boolean(canCreateCodes), // Добавляем право на создание кодов
     createdAt: new Date().toISOString(),
     lastLogin: null
   };
@@ -957,6 +965,7 @@ app.post('/api/users', requireAuth, requireAdmin, express.json(), (req, res) => 
     login: newUser.login,
     isAdmin: newUser.isAdmin,
     isActive: newUser.isActive,
+    canCreateCodes: newUser.canCreateCodes,
     createdAt: newUser.createdAt
   });
 });
@@ -1079,6 +1088,143 @@ app.get('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
     res.json(disconnectedSessions.get(clientId));
   } else {
     res.status(404).json({ error: 'Сессия не найдена' });
+  }
+});
+
+// Изменение права на создание кодов
+app.put('/api/users/:login/access-codes-permission', requireAuth, requireAdmin, express.json(), (req, res) => {
+  const { login } = req.params;
+  const { canCreateCodes } = req.body;
+  
+  if (!users.has(login.toLowerCase())) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+  
+  const user = users.get(login.toLowerCase());
+  
+  // Не разрешаем менять разрешение главному администратору
+  if (login.toLowerCase() === ADMIN_LOGIN.toLowerCase() && canCreateCodes === false) {
+    return res.status(400).json({ error: 'Невозможно изменить разрешения главного администратора' });
+  }
+  
+  user.canCreateCodes = Boolean(canCreateCodes);
+  users.set(login.toLowerCase(), user);
+  
+  res.json({
+    login: user.login,
+    isAdmin: user.isAdmin,
+    isActive: user.isActive,
+    canCreateCodes: user.canCreateCodes
+  });
+});
+
+// Проверка прав на создание кодов доступа
+app.get('/api/check-create-codes-permission', requireAuth, (req, res) => {
+  const hasPermission = req.user.isAdmin || req.user.canCreateCodes || false;
+  res.json({ canCreate: hasPermission });
+});
+
+// Добавляем новый маршрут для импорта/экспорта данных
+app.get('/admin/export-import', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'export-import.html'));
+});
+
+// API для экспорта всех данных
+app.get('/api/export-data', requireAuth, requireAdmin, (req, res) => {
+  const exportData = {
+    users: Array.from(users.entries()).map(([key, user]) => {
+      // Удаляем хеш пароля из экспорта для безопасности
+      const { passwordHash, ...safeUser } = user;
+      return [key, safeUser];
+    }),
+    accessCodes: Array.from(accessCodes.entries()),
+    disconnectedSessions: Array.from(disconnectedSessions.entries()),
+    clientsMessageHistory: Array.from(clientsMessageHistory.entries())
+  };
+  
+  res.json(exportData);
+});
+
+// API для импорта данных
+app.post('/api/import-data', requireAuth, requireAdmin, express.json({ limit: '50mb' }), (req, res) => {
+  const { data, importOptions } = req.body;
+  const result = { success: true, importedItems: {} };
+  
+  try {
+    // Импортируем только выбранные типы данных
+    if (importOptions.users && data.users) {
+      // Сохраняем существующего администратора
+      const adminUser = users.get(ADMIN_LOGIN.toLowerCase());
+      
+      // Очищаем текущих пользователей если указано
+      if (importOptions.clearBeforeImport) {
+        users.clear();
+        // Восстанавливаем администратора
+        if (adminUser) {
+          users.set(ADMIN_LOGIN.toLowerCase(), adminUser);
+        }
+      }
+      
+      // Импортируем пользователей
+      data.users.forEach(([key, userData]) => {
+        // Пропускаем импорт главного администратора
+        if (key !== ADMIN_LOGIN.toLowerCase()) {
+          // Добавляем пользователя только если у него есть хеш пароля
+          if (userData.passwordHash) {
+            users.set(key, userData);
+          } else {
+            console.log(`Пропуск импорта пользователя ${key}: отсутствует хеш пароля`);
+          }
+        }
+      });
+      
+      result.importedItems.users = data.users.length;
+    }
+    
+    if (importOptions.accessCodes && data.accessCodes) {
+      if (importOptions.clearBeforeImport) {
+        accessCodes.clear();
+      }
+      
+      data.accessCodes.forEach(([key, value]) => {
+        accessCodes.set(key, value);
+      });
+      
+      result.importedItems.accessCodes = data.accessCodes.length;
+    }
+    
+    if (importOptions.disconnectedSessions && data.disconnectedSessions) {
+      if (importOptions.clearBeforeImport) {
+        disconnectedSessions.clear();
+      }
+      
+      data.disconnectedSessions.forEach(([key, value]) => {
+        disconnectedSessions.set(key, value);
+      });
+      
+      result.importedItems.disconnectedSessions = data.disconnectedSessions.length;
+    }
+    
+    if (importOptions.clientsMessageHistory && data.clientsMessageHistory) {
+      if (importOptions.clearBeforeImport) {
+        clientsMessageHistory.clear();
+      }
+      
+      data.clientsMessageHistory.forEach(([key, value]) => {
+        clientsMessageHistory.set(key, value);
+      });
+      
+      result.importedItems.clientsMessageHistory = data.clientsMessageHistory.length;
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Ошибка при импорте данных:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      result
+    });
   }
 });
 

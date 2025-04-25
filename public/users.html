@@ -328,6 +328,56 @@
     .error-message.visible {
       display: block;
     }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: var(--primary-color);
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+    
+    input:disabled + .toggle-slider {
+      background-color: #e0e0e0;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -360,7 +410,8 @@
             <th>Логин</th>
             <th>Статус</th>
             <th>Права</th>
-            <th>Дата создания</th>
+            <th>Доступ к кодам</th>
+            <th>Создан</th>
             <th>Последний вход</th>
             <th>Действия</th>
           </tr>
@@ -394,6 +445,13 @@
         <div class="form-check">
           <input type="checkbox" id="new-is-admin" class="form-check-input">
           <label for="new-is-admin" class="form-check-label">Права администратора</label>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="new-user-can-create-codes" name="canCreateCodes">
+            <label for="new-user-can-create-codes">Право создавать коды доступа</label>
+          </div>
         </div>
         
         <div id="add-error-message" class="error-message"></div>
@@ -474,6 +532,12 @@
               ${user.isAdmin ? 'Администратор' : 'Пользователь'}
             </span>
           </td>
+          <td>
+            <div class="toggle-switch">
+              <input type="checkbox" class="codes-access-toggle" ${user.canCreateCodes ? 'checked' : ''} ${user.login === 'Mrak' ? 'disabled' : ''}>
+              <span class="toggle-slider"></span>
+            </div>
+          </td>
           <td>${formatDate(user.createdAt)}</td>
           <td>${formatDate(user.lastLogin)}</td>
           <td>
@@ -505,6 +569,34 @@
       
       document.querySelectorAll('.delete-user').forEach(btn => {
         btn.addEventListener('click', deleteUser);
+      });
+      
+      document.querySelectorAll('.codes-access-toggle').forEach(toggle => {
+        toggle.addEventListener('change', async (e) => {
+          const canCreateCodes = e.target.checked;
+          const login = e.target.closest('tr').dataset.login;
+          
+          try {
+            const response = await fetch(`/api/users/${login}/access-codes-permission`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ canCreateCodes })
+            });
+            
+            if (!response.ok) {
+              const data = await response.json();
+              throw new Error(data.error || 'Ошибка при изменении прав пользователя');
+            }
+            
+            showNotification(`Права на создание кодов ${canCreateCodes ? 'разрешены' : 'запрещены'} для ${login}`, 'success');
+          } catch (error) {
+            console.error('Ошибка:', error);
+            showNotification(error.message, 'error');
+            e.target.checked = !canCreateCodes; // Возвращаем предыдущее состояние
+          }
+        });
       });
     }
     
@@ -597,6 +689,7 @@
       const login = document.getElementById('new-login').value.trim();
       const password = document.getElementById('new-password').value;
       const isAdmin = document.getElementById('new-is-admin').checked;
+      const canCreateCodes = document.getElementById('new-user-can-create-codes').checked;
       
       try {
         const response = await fetch('/api/users', {
@@ -604,7 +697,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ login, password, isAdmin })
+          body: JSON.stringify({ login, password, isAdmin, canCreateCodes })
         });
         
         if (!response.ok) {
