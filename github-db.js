@@ -136,14 +136,191 @@ class GitHubDatabase {
   }
 
   /**
-   * Загружает все файлы из папки data
-   * @returns {Promise<Object>} Объект, содержащий все загруженные данные
+   * Проверяет наличие папки коллекции и создает ее, если нужно
+   * @param {string} collection Имя коллекции
+   * @returns {Promise<void>}
    */
-  async loadAllData() {
+  async ensureCollectionFolder(collection) {
+    const collectionPath = `${this.config.dataFolder}/${collection}`;
     try {
-      this.log('Загрузка всех данных из GitHub...');
+      // Попробуем получить содержимое папки коллекции
+      await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: collectionPath,
+        ref: this.config.branch
+      });
       
-      // Получаем список всех файлов в папке data
+      this.log(`Папка коллекции ${collection} уже существует`);
+    } catch (error) {
+      // Если папка не существует (статус 404), создаем ее
+      if (error.status === 404) {
+        this.log(`Папка коллекции ${collection} не найдена, создаем...`);
+        
+        // Создаем пустой файл README.md в папке коллекции
+        await this.createFile(
+          `${collectionPath}/README.md`,
+          `# Коллекция ${collection}\nСоздана автоматически ${new Date().toISOString()}`
+        );
+        
+        // Создаем индексный файл для коллекции
+        await this.createFile(
+          `${collectionPath}/index.json`,
+          JSON.stringify({
+            name: collection,
+            count: 0,
+            created: new Date().toISOString(),
+            lastUpdated: new Date().toISOString()
+          }, null, 2)
+        );
+        
+        this.log(`Папка коллекции ${collection} успешно создана`);
+      } else {
+        this.log(`Ошибка при проверке папки коллекции ${collection}: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Проверяет и при необходимости создает папку для группировки связанных данных
+   * @param {string} collection Имя коллекции
+   * @param {string} groupId Идентификатор группы (например, userId)
+   * @returns {Promise<void>}
+   */
+  async ensureGroupFolder(collection, groupId) {
+    const groupPath = `${this.config.dataFolder}/${collection}/${groupId}`;
+    try {
+      // Пробуем получить содержимое папки группы
+      await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: groupPath,
+        ref: this.config.branch
+      });
+      
+      this.log(`Папка группы ${groupPath} уже существует`);
+    } catch (error) {
+      // Если папка не существует (статус 404), создаем ее
+      if (error.status === 404) {
+        this.log(`Папка группы ${groupPath} не найдена, создаем...`);
+        
+        // Сначала убедимся, что папка коллекции существует
+        await this.ensureCollectionFolder(collection);
+        
+        // Создаем пустой файл README.md в папке группы
+        await this.createFile(
+          `${groupPath}/README.md`,
+          `# Группа ${groupId} в коллекции ${collection}\nСоздана автоматически ${new Date().toISOString()}`
+        );
+        
+        this.log(`Папка группы ${groupPath} успешно создана`);
+      } else {
+        this.log(`Ошибка при проверке папки группы ${groupPath}: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Получает путь к файлу записи
+   * @param {string} collection Имя коллекции
+   * @param {string} key Ключ записи
+   * @param {Object} options Дополнительные опции
+   * @param {boolean} options.useGrouping Использовать группировку (по умолчанию false)
+   * @param {string} options.groupId Идентификатор группы (если useGrouping=true)
+   * @returns {string} Путь к файлу
+   */
+  getRecordPath(collection, key, options = {}) {
+    const { useGrouping = false, groupId = null } = options;
+    
+    if (useGrouping && groupId) {
+      return `${this.config.dataFolder}/${collection}/${groupId}/${key}.json`;
+    } else {
+      return `${this.config.dataFolder}/${collection}/${key}.json`;
+    }
+  }
+
+  /**
+   * Обновляет индексный файл коллекции
+   * @param {string} collection Имя коллекции
+   * @returns {Promise<void>}
+   */
+  async updateCollectionIndex(collection) {
+    try {
+      const collectionPath = `${this.config.dataFolder}/${collection}`;
+      
+      // Получаем список всех файлов в коллекции
+      const files = await this.listFilesInCollection(collection);
+      
+      // Фильтруем только JSON файлы (кроме index.json и README.md)
+      const jsonFiles = files.filter(file => 
+        file.endsWith('.json') && 
+        file !== 'index.json' && 
+        file !== 'README.md'
+      );
+      
+      // Создаем обновленный индекс
+      const index = {
+        name: collection,
+        count: jsonFiles.length,
+        lastUpdated: new Date().toISOString(),
+        files: jsonFiles.map(file => ({
+          id: file.replace('.json', ''),
+          path: `${collectionPath}/${file}`
+        }))
+      };
+      
+      // Сохраняем обновленный индекс
+      await this.createFile(
+        `${collectionPath}/index.json`,
+        JSON.stringify(index, null, 2)
+      );
+      
+      this.log(`Индекс коллекции ${collection} успешно обновлен`);
+    } catch (error) {
+      this.log(`Ошибка при обновлении индекса коллекции ${collection}: ${error.message}`, 'error');
+      // Не выбрасываем ошибку, чтобы не прерывать основные операции
+    }
+  }
+
+  /**
+   * Получает список файлов в коллекции
+   * @param {string} collection Имя коллекции
+   * @returns {Promise<string[]>} Массив имен файлов
+   */
+  async listFilesInCollection(collection) {
+    try {
+      const collectionPath = `${this.config.dataFolder}/${collection}`;
+      
+      // Получаем содержимое папки коллекции
+      const { data: contents } = await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: collectionPath,
+        ref: this.config.branch
+      });
+      
+      // Фильтруем только файлы и возвращаем их имена
+      return contents
+        .filter(item => item.type === 'file')
+        .map(item => item.name);
+    } catch (error) {
+      if (error.status === 404) {
+        // Если папка не существует, возвращаем пустой массив
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Получает список всех коллекций
+   * @returns {Promise<string[]>} Массив имен коллекций
+   */
+  async listCollections() {
+    try {
+      // Получаем содержимое папки данных
       const { data: contents } = await this.octokit.repos.getContent({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -151,51 +328,89 @@ class GitHubDatabase {
         ref: this.config.branch
       });
       
-      // Отфильтровываем только JSON файлы
-      const jsonFiles = contents.filter(item => 
-        item.type === 'file' && item.name.endsWith('.json') && item.name !== 'README.md'
-      );
+      // Фильтруем только папки и возвращаем их имена
+      return contents
+        .filter(item => item.type === 'dir')
+        .map(item => item.name);
+    } catch (error) {
+      if (error.status === 404) {
+        // Если папка данных не существует, возвращаем пустой массив
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Загружает все файлы из папки data
+   * @returns {Promise<Object>} Объект, содержащий все загруженные данные
+   */
+  async loadAllData() {
+    try {
+      this.log('Загрузка всех данных из GitHub...');
       
-      this.log(`Найдено ${jsonFiles.length} JSON файлов для загрузки`);
+      // Получаем список всех коллекций
+      const collections = await this.listCollections();
+      this.log(`Найдено ${collections.length} коллекций`);
       
-      // Загружаем содержимое каждого файла
       const result = {};
       
-      for (const file of jsonFiles) {
+      // Загружаем данные из каждой коллекции
+      for (const collection of collections) {
+        result[collection] = new Map();
+        
         try {
-          // Получаем имя коллекции из имени файла (до первого -)
-          const fileName = file.name.replace('.json', '');
-          const collectionName = fileName.split('-')[0];
+          // Получаем список файлов в коллекции
+          const files = await this.listFilesInCollection(collection);
           
-          // Если эта коллекция еще не существует в результате, создаем ее
-          if (!result[collectionName]) {
-            result[collectionName] = new Map();
+          // Фильтруем только JSON файлы (кроме index.json и README.md)
+          const jsonFiles = files.filter(file => 
+            file.endsWith('.json') && 
+            file !== 'index.json' && 
+            file !== 'README.md'
+          );
+          
+          this.log(`Найдено ${jsonFiles.length} JSON файлов в коллекции ${collection}`);
+          
+          // Загружаем каждый файл
+          for (const file of jsonFiles) {
+            try {
+              const filePath = `${this.config.dataFolder}/${collection}/${file}`;
+              
+              // Загружаем содержимое файла
+              const { data: fileData } = await this.octokit.repos.getContent({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                path: filePath,
+                ref: this.config.branch
+              });
+              
+              // Декодируем содержимое из base64
+              const content = Buffer.from(fileData.content, 'base64').toString();
+              
+              // Парсим JSON
+              const data = JSON.parse(content);
+              
+              // Пропускаем удаленные записи
+              if (data.__deleted) {
+                continue;
+              }
+              
+              // Извлекаем ключ из имени файла
+              const key = file.replace('.json', '');
+              
+              // Добавляем данные в соответствующую коллекцию
+              result[collection].set(key, data);
+              
+              this.log(`Загружены данные из файла ${file}, коллекция: ${collection}, ключ: ${key}`);
+            } catch (fileError) {
+              this.log(`Ошибка при загрузке файла ${file}: ${fileError.message}`, 'error');
+              // Продолжаем загрузку других файлов
+            }
           }
-          
-          // Загружаем содержимое файла
-          const { data: fileData } = await this.octokit.repos.getContent({
-            owner: this.config.owner,
-            repo: this.config.repo,
-            path: file.path,
-            ref: this.config.branch
-          });
-          
-          // Декодируем содержимое из base64
-          const content = Buffer.from(fileData.content, 'base64').toString();
-          
-          // Парсим JSON
-          const data = JSON.parse(content);
-          
-          // Извлекаем ключ из имени файла (после первого -)
-          const key = fileName.includes('-') ? fileName.split('-').slice(1).join('-') : data.id || fileName;
-          
-          // Добавляем данные в соответствующую коллекцию
-          result[collectionName].set(key, data);
-          
-          this.log(`Загружены данные из файла ${file.name}, коллекция: ${collectionName}, ключ: ${key}`);
-        } catch (fileError) {
-          this.log(`Ошибка при загрузке файла ${file.name}: ${fileError.message}`, 'error');
-          // Продолжаем загрузку других файлов
+        } catch (collectionError) {
+          this.log(`Ошибка при загрузке коллекции ${collection}: ${collectionError.message}`, 'error');
+          // Продолжаем загрузку других коллекций
         }
       }
       
@@ -212,9 +427,14 @@ class GitHubDatabase {
    * @param {string} collection Название коллекции данных
    * @param {string} key Ключ записи
    * @param {Object} data Данные для сохранения
+   * @param {Object} options Дополнительные опции
+   * @param {boolean} options.useGrouping Использовать группировку (по умолчанию false)
+   * @param {string} options.groupId Идентификатор группы (если useGrouping=true)
    * @returns {Promise<void>}
    */
-  async saveRecord(collection, key, data) {
+  async saveRecord(collection, key, data, options = {}) {
+    const { useGrouping = false, groupId = null } = options;
+    
     // Добавляем операцию в очередь для избежания конфликтов при параллельном сохранении
     this.saveQueue = this.saveQueue.then(async () => {
       const operationId = ++this.operationCounter;
@@ -224,10 +444,19 @@ class GitHubDatabase {
         // Обновляем SHA последнего коммита и дерева
         await this.refreshLatestCommitAndTree();
         
+        // Убедимся, что папка коллекции существует
+        await this.ensureCollectionFolder(collection);
+        
+        // Если используется группировка, убедимся, что папка группы существует
+        if (useGrouping && groupId) {
+          await this.ensureGroupFolder(collection, groupId);
+        }
+        
         // Подготавливаем данные для сохранения
         const content = JSON.stringify(data, null, 2);
-        const fileName = `${collection}-${key}.json`;
-        const path = `${this.config.dataFolder}/${fileName}`;
+        
+        // Получаем путь к файлу
+        const path = this.getRecordPath(collection, key, { useGrouping, groupId });
         
         // Создаем блоб с данными
         const { data: blobData } = await this.octokit.git.createBlob({
@@ -281,6 +510,9 @@ class GitHubDatabase {
         // Обновляем кэш
         this.latestCommitSha = newCommitSha;
         this.latestTreeSha = newTreeSha;
+        
+        // Обновляем индекс коллекции
+        await this.updateCollectionIndex(collection);
         
         this.log(`[${operationId}] Запись успешно сохранена в GitHub`);
       } catch (error) {
@@ -392,17 +624,21 @@ class GitHubDatabase {
    * Удаляет запись из GitHub
    * @param {string} collection Название коллекции данных
    * @param {string} key Ключ записи
+   * @param {Object} options Дополнительные опции
+   * @param {boolean} options.useGrouping Использовать группировку (по умолчанию false)
+   * @param {string} options.groupId Идентификатор группы (если useGrouping=true) 
    * @returns {Promise<void>}
    */
-  async deleteRecord(collection, key) {
+  async deleteRecord(collection, key, options = {}) {
+    const { useGrouping = false, groupId = null } = options;
+    
     this.saveQueue = this.saveQueue.then(async () => {
       const operationId = ++this.operationCounter;
       this.log(`[${operationId}] Удаление записи. Коллекция: ${collection}, ключ: ${key}`);
       
       try {
-        // В текущей реализации мы не удаляем файлы, а добавляем новые с пометкой deleted
-        const fileName = `${collection}-${key}.json`;
-        const path = `${this.config.dataFolder}/${fileName}`;
+        // Получаем путь к файлу
+        const path = this.getRecordPath(collection, key, { useGrouping, groupId });
         
         // Получаем текущие данные файла
         try {
@@ -424,7 +660,10 @@ class GitHubDatabase {
           data.__deletedAt = new Date().toISOString();
           
           // Сохраняем обновленные данные
-          await this.saveRecord(collection, key, data);
+          await this.saveRecord(collection, key, data, { useGrouping, groupId });
+          
+          // Обновляем индекс коллекции
+          await this.updateCollectionIndex(collection);
           
           this.log(`[${operationId}] Запись помечена как удаленная`);
         } catch (error) {
@@ -447,6 +686,73 @@ class GitHubDatabase {
     
     // Возвращаем промис из очереди
     return this.saveQueue;
+  }
+
+  /**
+   * Сохраняет связанные данные группы (например, пользовательские данные)
+   * @param {string} collection Имя коллекции 
+   * @param {string} groupId Идентификатор группы (например, userId)
+   * @param {string} dataType Тип данных (например, 'profile', 'settings')
+   * @param {Object} data Данные для сохранения
+   * @returns {Promise<void>}
+   */
+  async saveGroupData(collection, groupId, dataType, data) {
+    try {
+      // Убедимся, что папка группы существует
+      await this.ensureGroupFolder(collection, groupId);
+      
+      // Сохраняем данные как отдельный файл в папке группы
+      await this.saveRecord(collection, dataType, data, {
+        useGrouping: true,
+        groupId
+      });
+      
+      this.log(`Данные группы сохранены: ${collection}/${groupId}/${dataType}`);
+    } catch (error) {
+      this.log(`Ошибка при сохранении данных группы: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  /**
+   * Загружает связанные данные группы
+   * @param {string} collection Имя коллекции
+   * @param {string} groupId Идентификатор группы
+   * @param {string} dataType Тип данных (например, 'profile', 'settings')
+   * @returns {Promise<Object|null>} Загруженные данные или null если не найдены
+   */
+  async loadGroupData(collection, groupId, dataType) {
+    try {
+      const filePath = `${this.config.dataFolder}/${collection}/${groupId}/${dataType}.json`;
+      
+      const { data: fileData } = await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: filePath,
+        ref: this.config.branch
+      });
+      
+      // Декодируем содержимое из base64
+      const content = Buffer.from(fileData.content, 'base64').toString();
+      
+      // Парсим JSON
+      const data = JSON.parse(content);
+      
+      // Проверяем, не помечена ли запись как удаленная
+      if (data.__deleted) {
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      if (error.status === 404) {
+        // Если файл не найден, возвращаем null
+        return null;
+      }
+      
+      this.log(`Ошибка при загрузке данных группы: ${error.message}`, 'error');
+      throw error;
+    }
   }
 
   /**

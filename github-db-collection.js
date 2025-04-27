@@ -22,6 +22,11 @@ class GitHubDBCollection {
     this.saveTimers = new Map(); // ключ => таймер для debounce
     this.pendingSaves = new Set(); // ключи, ожидающие сохранения
     this.logger = options.db.config.logger; // Используем тот же логгер, что и в БД
+    
+    // Опции для группировки данных
+    this.useGrouping = options.useGrouping || false;
+    this.groupIdField = options.groupIdField || 'groupId';
+    this.shardSize = options.shardSize || 100; // Количество записей в одном шарде
   }
 
   /**
@@ -94,13 +99,39 @@ class GitHubDBCollection {
       
       // Запускаем процесс удаления записи
       if (markAsDeleted) {
-        this.db.deleteRecord(this.name, key).catch(err => {
+        // Определяем, есть ли группировка для данной записи
+        const options = this._getGroupingOptions(key);
+        
+        this.db.deleteRecord(this.name, key, options).catch(err => {
           this.log(`Ошибка при удалении записи ${key}: ${err.message}`, 'error');
         });
       }
     }
     
     return hadKey;
+  }
+
+  /**
+   * Получает опции группировки для записи
+   * @param {string} key Ключ записи
+   * @returns {Object} Опции группировки { useGrouping, groupId }
+   * @private
+   */
+  _getGroupingOptions(key) {
+    if (!this.useGrouping) {
+      return { useGrouping: false };
+    }
+    
+    const value = this.data.get(key);
+    
+    if (!value || !value[this.groupIdField]) {
+      return { useGrouping: false };
+    }
+    
+    return {
+      useGrouping: true,
+      groupId: value[this.groupIdField]
+    };
   }
 
   /**
@@ -207,7 +238,8 @@ class GitHubDBCollection {
     // Если нужно сохранить изменения, помечаем каждый ключ как удаленный
     if (saveChanges && this.autoSave) {
       for (const key of keys) {
-        this.db.deleteRecord(this.name, key).catch(err => {
+        const options = this._getGroupingOptions(key);
+        this.db.deleteRecord(this.name, key, options).catch(err => {
           this.log(`Ошибка при удалении записи ${key} после очистки: ${err.message}`, 'error');
         });
       }
@@ -323,7 +355,11 @@ class GitHubDBCollection {
    */
   async _saveRecord(key, value) {
     try {
-      await this.db.saveRecord(this.name, key, value);
+      // Определяем опции группировки для данной записи
+      const options = this._getGroupingOptions(key);
+      
+      // Сохраняем запись в соответствующую группу или в корень коллекции
+      await this.db.saveRecord(this.name, key, value, options);
     } catch (error) {
       this.log(`Ошибка при сохранении записи ${key}: ${error.message}`, 'error');
       // Возвращаем ключ обратно в список ожидающих сохранения для повторной попытки
