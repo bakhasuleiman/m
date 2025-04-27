@@ -129,7 +129,14 @@ const requireAuth = (req, res, next) => {
 // Middleware для проверки прав администратора
 const requireAdmin = (req, res, next) => {
   if (!req.user || !req.user.isAdmin) {
-    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора.' });
+    // Проверяем, является ли запрос API-запросом или запросом на HTML-страницу
+    if (req.path.startsWith('/api/')) {
+      // Для API возвращаем JSON с ошибкой
+      return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора.' });
+    } else {
+      // Для запросов HTML-страниц перенаправляем на страницу forbidden
+      return res.redirect('/forbidden');
+    }
   }
   next();
 };
@@ -1240,6 +1247,11 @@ app.post('/api/import-data', requireAuth, requireAdmin, (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: `Ошибка при импорте данных: ${error.message}` });
   }
+});
+
+// Добавляем маршрут для страницы доступа запрещен
+app.get('/forbidden', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'forbidden.html'));
 });
 
 // Инициализация и запуск сервера
