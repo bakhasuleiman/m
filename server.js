@@ -6,6 +6,10 @@ const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
+// Добавляем поддержку .env файла
+require('dotenv').config();
+// Импортируем GitHubDBManager
+const dbManager = require('./github-db-manager');
 
 // Функция для хеширования пароля с использованием SHA-256
 function hashPassword(password, salt) {
@@ -24,24 +28,18 @@ const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 часа
 // Хеширование пароля администратора
 const ADMIN_PASSWORD_HASH = hashPassword(ADMIN_PASSWORD, SALT);
 
-// Хранилище для пользователей (логин => пользователь)
-const users = new Map();
-// Добавляем учетную запись администратора
-users.set(ADMIN_LOGIN.toLowerCase(), {
-  login: ADMIN_LOGIN,
-  passwordHash: ADMIN_PASSWORD_HASH,
-  isAdmin: true,
-  isActive: true,
-  canCreateCodes: true, // Добавляем право на создание кодов доступа
-  createdAt: new Date().toISOString(),
-  lastLogin: null
-});
+// Хранилища данных (будут заменены на GitHubDBCollection после инициализации)
+let users = new Map();
+let activeSessions = new Map();
+let accessCodes = new Map();
+let clientsMessageHistory = new Map();
 
-// Хранилище для активных сессий
-const activeSessions = new Map();
+// Временные хранилища данных (остаются в памяти)
+const clients = new Map();
+const admins = new Set();
+const clientReconnectTimers = new Map();
+const disconnectedSessions = new Map();
 
-// Хранилище для уникальных кодов доступа
-const accessCodes = new Map();
 // Функция для генерации случайного 3-символьного кода
 function generateAccessCode() {
   const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -65,12 +63,14 @@ function createAccessCode() {
     code = generateAccessCode();
   } while (!isCodeUnique(code));
   
-  accessCodes.set(code, {
+  const codeData = {
     active: true,
     created: new Date().toISOString(),
     lastUsed: null,
     useCount: 0
-  });
+  };
+  
+  accessCodes.set(code, codeData);
   return code;
 }
 
@@ -234,13 +234,6 @@ app.delete('/api/access-codes/:code', requireAuth, (req, res) => {
 // Настройка WebSocket сервера
 const wss = new WebSocket.Server({ server });
 
-// Хранилище клиентов и админов
-const clients = new Map();
-const admins = new Set();
-
-// История сообщений для каждого клиента на сервере
-const clientsMessageHistory = new Map();
-
 // Настройки по умолчанию
 const defaultSettings = {
   updateInterval: 5 * 60 * 1000, // 25 минут в миллисекундах
@@ -248,13 +241,6 @@ const defaultSettings = {
   viewerFontSize: 8,
   viewerOpacity: 0.7
 };
-
-// Хранилище таймеров для клиентов
-const clientReconnectTimers = new Map();
-const reconnectTimeout = 10000; // Увеличиваем до 60 секунд для переподключения
-
-// Хранилище для отключенных сессий клиентов
-const disconnectedSessions = new Map();
 
 // Обработка WebSocket соединений
 wss.on('connection', (ws) => {
@@ -1129,105 +1115,217 @@ app.get('/admin/export-import', requireAuth, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'export-import.html'));
 });
 
-// API для экспорта всех данных
+// Экспорт данных
 app.get('/api/export-data', requireAuth, requireAdmin, (req, res) => {
+  // Проверяем, используется ли GitHubDBManager
+  const isUsingGithub = dbManager.initialized;
+  
   const exportData = {
-    users: Array.from(users.entries()).map(([key, user]) => {
-      // Удаляем хеш пароля из экспорта для безопасности
-      const { passwordHash, ...safeUser } = user;
-      return [key, safeUser];
-    }),
-    accessCodes: Array.from(accessCodes.entries()),
-    disconnectedSessions: Array.from(disconnectedSessions.entries()),
-    clientsMessageHistory: Array.from(clientsMessageHistory.entries())
+    meta: {
+      exportDate: new Date().toISOString(),
+      isUsingGithub
+    },
+    users: Array.from(users.entries()).reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {}),
+    accessCodes: Array.from(accessCodes.entries()).reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {}),
+    clientsMessageHistory: Array.from(clientsMessageHistory.entries()).reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {})
   };
   
   res.json(exportData);
 });
 
-// API для импорта данных
-app.post('/api/import-data', requireAuth, requireAdmin, express.json({ limit: '50mb' }), (req, res) => {
-  const { data, importOptions } = req.body;
-  const result = { success: true, importedItems: {} };
+// Импорт данных
+app.post('/api/import-data', requireAuth, requireAdmin, (req, res) => {
+  const importData = req.body;
+  
+  if (!importData) {
+    return res.status(400).json({ error: 'Нет данных для импорта' });
+  }
   
   try {
-    // Импортируем только выбранные типы данных
-    if (importOptions.users && data.users) {
-      // Сохраняем существующего администратора
-      const adminUser = users.get(ADMIN_LOGIN.toLowerCase());
-      
-      // Очищаем текущих пользователей если указано
-      if (importOptions.clearBeforeImport) {
-        users.clear();
-        // Восстанавливаем администратора
-        if (adminUser) {
-          users.set(ADMIN_LOGIN.toLowerCase(), adminUser);
-        }
+    // Импортируем пользователей
+    if (importData.users) {
+      for (const [key, value] of Object.entries(importData.users)) {
+        users.set(key, value);
       }
-      
-      // Импортируем пользователей
-      data.users.forEach(([key, userData]) => {
-        // Пропускаем импорт главного администратора
-        if (key !== ADMIN_LOGIN.toLowerCase()) {
-          // Добавляем пользователя только если у него есть хеш пароля
-          if (userData.passwordHash) {
-            users.set(key, userData);
-          } else {
-            console.log(`Пропуск импорта пользователя ${key}: отсутствует хеш пароля`);
-          }
-        }
-      });
-      
-      result.importedItems.users = data.users.length;
     }
     
-    if (importOptions.accessCodes && data.accessCodes) {
-      if (importOptions.clearBeforeImport) {
-        accessCodes.clear();
-      }
-      
-      data.accessCodes.forEach(([key, value]) => {
+    // Импортируем коды доступа
+    if (importData.accessCodes) {
+      for (const [key, value] of Object.entries(importData.accessCodes)) {
         accessCodes.set(key, value);
-      });
-      
-      result.importedItems.accessCodes = data.accessCodes.length;
+      }
     }
     
-    if (importOptions.disconnectedSessions && data.disconnectedSessions) {
-      if (importOptions.clearBeforeImport) {
-        disconnectedSessions.clear();
-      }
-      
-      data.disconnectedSessions.forEach(([key, value]) => {
-        disconnectedSessions.set(key, value);
-      });
-      
-      result.importedItems.disconnectedSessions = data.disconnectedSessions.length;
-    }
-    
-    if (importOptions.clientsMessageHistory && data.clientsMessageHistory) {
-      if (importOptions.clearBeforeImport) {
-        clientsMessageHistory.clear();
-      }
-      
-      data.clientsMessageHistory.forEach(([key, value]) => {
+    // Импортируем историю сообщений
+    if (importData.clientsMessageHistory) {
+      for (const [key, value] of Object.entries(importData.clientsMessageHistory)) {
         clientsMessageHistory.set(key, value);
-      });
-      
-      result.importedItems.clientsMessageHistory = data.clientsMessageHistory.length;
+      }
     }
     
-    res.json(result);
-  } catch (error) {
-    console.error('Ошибка при импорте данных:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      result
+    // Если используется GitHub, запускаем принудительное сохранение
+    if (dbManager.initialized) {
+      dbManager.saveAll().catch(error => {
+        console.error(`Ошибка при сохранении данных после импорта: ${error.message}`);
+      });
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Данные успешно импортированы'
     });
+  } catch (error) {
+    return res.status(500).json({ error: `Ошибка при импорте данных: ${error.message}` });
   }
 });
 
-server.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
-});
+// Инициализация и запуск сервера
+async function initializeAndStartServer() {
+  try {
+    console.log('Инициализация GitHub базы данных...');
+    
+    // Проверяем наличие конфигурации GitHub
+    if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_OWNER || !process.env.GITHUB_REPO) {
+      console.warn('ВНИМАНИЕ: Не указаны параметры подключения к GitHub. Используется хранение в памяти.');
+      console.warn('Для постоянного хранения данных укажите GITHUB_TOKEN, GITHUB_OWNER и GITHUB_REPO в .env файле.');
+      
+      // Добавляем учетную запись администратора в памяти
+      users.set(ADMIN_LOGIN.toLowerCase(), {
+        login: ADMIN_LOGIN,
+        passwordHash: ADMIN_PASSWORD_HASH,
+        isAdmin: true,
+        isActive: true,
+        canCreateCodes: true,
+        createdAt: new Date().toISOString(),
+        lastLogin: null
+      });
+      
+      // Запускаем сервер без GitHub
+      startServer();
+      return;
+    }
+    
+    // Инициализируем GitHub базу данных
+    await dbManager.initialize();
+    
+    // Получаем коллекции из GitHub
+    users = dbManager.collection('users');
+    accessCodes = dbManager.collection('accessCodes');
+    activeSessions = dbManager.collection('activeSessions');
+    clientsMessageHistory = dbManager.collection('clientsMessageHistory');
+    
+    // Проверяем, есть ли хотя бы один администратор
+    if (users.size() === 0) {
+      console.log('Создание учетной записи администратора по умолчанию...');
+      users.set(ADMIN_LOGIN.toLowerCase(), {
+        login: ADMIN_LOGIN,
+        passwordHash: ADMIN_PASSWORD_HASH,
+        isAdmin: true,
+        isActive: true,
+        canCreateCodes: true,
+        createdAt: new Date().toISOString(),
+        lastLogin: null
+      });
+    }
+    
+    console.log(`Загружено: ${users.size()} пользователей, ${accessCodes.size()} кодов доступа, ${clientsMessageHistory.size()} историй сообщений`);
+    
+    // Запускаем сервер
+    startServer();
+    
+    // Установка автосохранения
+    setInterval(async () => {
+      try {
+        await dbManager.saveAll();
+      } catch (error) {
+        console.error(`Ошибка при автосохранении данных: ${error.message}`);
+      }
+    }, 60000); // Автосохранение каждую минуту
+    
+  } catch (error) {
+    console.error(`Ошибка при инициализации GitHub базы данных: ${error.message}`);
+    console.log('Запуск сервера с хранением данных в памяти...');
+    
+    // Добавляем учетную запись администратора в памяти
+    users.set(ADMIN_LOGIN.toLowerCase(), {
+      login: ADMIN_LOGIN,
+      passwordHash: ADMIN_PASSWORD_HASH,
+      isAdmin: true,
+      isActive: true,
+      canCreateCodes: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: null
+    });
+    
+    // Запускаем сервер без GitHub
+    startServer();
+  }
+}
+
+// Функция запуска сервера
+function startServer() {
+  server.listen(port, () => {
+    console.log(`Сервер запущен на порту ${port}`);
+  });
+}
+
+// Инициализация и запуск сервера
+initializeAndStartServer();
+
+// Обработчики для корректного завершения работы
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+// Функция корректного завершения работы
+async function gracefulShutdown() {
+  console.log('Получен сигнал завершения работы, выполняется корректное завершение...');
+  
+  // Сохраняем данные в GitHub, если используется
+  if (dbManager.initialized) {
+    console.log('Сохранение данных перед завершением работы...');
+    try {
+      await dbManager.saveAll();
+      console.log('Данные успешно сохранены');
+    } catch (error) {
+      console.error(`Ошибка при сохранении данных: ${error.message}`);
+    }
+  }
+  
+  // Закрываем все WebSocket соединения
+  if (wss) {
+    console.log('Закрытие всех WebSocket соединений...');
+    wss.clients.forEach(client => {
+      try {
+        client.close(1000, 'Сервер завершает работу');
+      } catch (e) {
+        // Игнорируем ошибки закрытия
+      }
+    });
+  }
+  
+  // Закрываем HTTP сервер
+  if (server) {
+    console.log('Остановка HTTP сервера...');
+    server.close(() => {
+      console.log('Сервер остановлен');
+      process.exit(0);
+    });
+    
+    // Если сервер не закрывается в течение 5 секунд, принудительно выходим
+    setTimeout(() => {
+      console.log('Принудительное завершение...');
+      process.exit(1);
+    }, 5000);
+  } else {
+    process.exit(0);
+  }
+}
