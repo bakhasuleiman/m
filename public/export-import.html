@@ -337,6 +337,82 @@
       color: var(--text-light);
       margin-top: 0.5rem;
     }
+
+    .github-status {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+
+    .github-status.enabled {
+      background-color: #e8f5e9;
+      border-left: 4px solid var(--success-color);
+      color: var(--success-color);
+    }
+
+    .github-status.disabled {
+      background-color: #fff3e0;
+      border-left: 4px solid var(--warning-color);
+      color: var(--warning-color);
+    }
+
+    .github-status-icon {
+      margin-right: 0.5rem;
+      font-size: 1.25rem;
+    }
+
+    .github-repo-info {
+      display: flex;
+      flex-direction: column;
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      background-color: var(--background-light);
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+
+    .github-repo-info span {
+      margin-bottom: 0.25rem;
+    }
+
+    .github-repo-info span strong {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+    }
+
+    .status-badge.success {
+      background-color: #e8f5e9;
+      color: var(--success-color);
+    }
+
+    .status-badge.warning {
+      background-color: #fff3e0;
+      color: var(--warning-color);
+    }
+
+    .last-sync-info {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-top: 0.25rem;
+    }
+
+    .force-sync-btn {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -358,6 +434,16 @@
   </header>
   
   <div class="container">
+    <!-- Статус GitHub базы данных -->
+    <div class="card" id="github-db-status-card">
+      <div class="card-header">
+        <h2 class="card-title">Статус GitHub базы данных</h2>
+      </div>
+      <div id="github-status-container"></div>
+      <div id="github-repo-details" style="display: none;"></div>
+      <div id="github-collections-info" style="display: none;"></div>
+    </div>
+
     <div class="two-columns">
       <div class="card">
         <div class="card-header">
@@ -378,8 +464,8 @@
             Коды доступа
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" class="export-option" data-type="disconnectedSessions" checked>
-            Отключенные сессии
+            <input type="checkbox" class="export-option" data-type="activeSessions" checked>
+            Активные сессии
           </label>
           <label class="checkbox-label">
             <input type="checkbox" class="export-option" data-type="clientsMessageHistory" checked>
@@ -392,7 +478,7 @@
           <ul>
             <li>Пользователи: <span class="data-count" id="users-count">0</span></li>
             <li>Коды доступа: <span class="data-count" id="access-codes-count">0</span></li>
-            <li>Отключенные сессии: <span class="data-count" id="sessions-count">0</span></li>
+            <li>Активные сессии: <span class="data-count" id="sessions-count">0</span></li>
             <li>История сообщений: <span class="data-count" id="messages-count">0</span></li>
           </ul>
           <p class="export-timestamp" id="export-timestamp"></p>
@@ -427,8 +513,8 @@
             Коды доступа
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" class="import-option" data-type="disconnectedSessions" checked>
-            Отключенные сессии
+            <input type="checkbox" class="import-option" data-type="activeSessions" checked>
+            Активные сессии
           </label>
           <label class="checkbox-label">
             <input type="checkbox" class="import-option" data-type="clientsMessageHistory" checked>
@@ -449,7 +535,7 @@
           <ul>
             <li>Пользователи: <span class="data-count" id="import-users-count">0</span></li>
             <li>Коды доступа: <span class="data-count" id="import-access-codes-count">0</span></li>
-            <li>Отключенные сессии: <span class="data-count" id="import-sessions-count">0</span></li>
+            <li>Активные сессии: <span class="data-count" id="import-sessions-count">0</span></li>
             <li>История сообщений: <span class="data-count" id="import-messages-count">0</span></li>
           </ul>
           <p class="export-timestamp" id="import-timestamp"></p>
@@ -499,6 +585,109 @@
         notification.classList.remove('visible');
       }, 5000);
     }
+
+    // Получение статуса GitHub БД
+    async function fetchGitHubDBStatus() {
+      try {
+        const response = await fetch('/api/github-db-status');
+        if (!response.ok) {
+          throw new Error('Ошибка при получении статуса GitHub БД');
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Ошибка при получении статуса GitHub БД:', error);
+        return { isEnabled: false, error: error.message };
+      }
+    }
+
+    // Отображение статуса GitHub БД
+    async function renderGitHubDBStatus() {
+      const statusContainer = document.getElementById('github-status-container');
+      const repoDetails = document.getElementById('github-repo-details');
+      const collectionsInfo = document.getElementById('github-collections-info');
+      
+      try {
+        const status = await fetchGitHubDBStatus();
+        
+        if (status.isEnabled) {
+          statusContainer.innerHTML = `
+            <div class="github-status enabled">
+              <span class="github-status-icon">✓</span>
+              <span>GitHub база данных включена и работает</span>
+            </div>
+          `;
+          
+          repoDetails.style.display = 'block';
+          repoDetails.innerHTML = `
+            <div class="github-repo-info">
+              <span><strong>Репозиторий:</strong> ${status.owner}/${status.repo}</span>
+              <span><strong>Ветка:</strong> ${status.branch}</span>
+              <span><strong>Папка данных:</strong> ${status.dataFolder}</span>
+              <span><strong>Последняя синхронизация:</strong> ${new Date(status.lastSync).toLocaleString()}</span>
+            </div>
+            <button id="force-sync-btn" class="btn btn-secondary force-sync-btn">Принудительная синхронизация</button>
+          `;
+          
+          collectionsInfo.style.display = 'block';
+          collectionsInfo.innerHTML = `
+            <div class="data-info">
+              <p>Коллекции в GitHub:</p>
+              <ul>
+                ${Object.entries(status.collections).map(([name, count]) => 
+                  `<li>${name}: <span class="data-count">${count}</span> записей</li>`
+                ).join('')}
+              </ul>
+            </div>
+          `;
+          
+          // Добавляем обработчик для принудительной синхронизации
+          document.getElementById('force-sync-btn').addEventListener('click', async () => {
+            try {
+              const response = await fetch('/api/github-db-sync', {
+                method: 'POST'
+              });
+              
+              if (!response.ok) {
+                throw new Error('Ошибка при синхронизации с GitHub');
+              }
+              
+              const result = await response.json();
+              showNotification('Синхронизация с GitHub выполнена успешно', 'success');
+              
+              // Обновляем информацию
+              renderGitHubDBStatus();
+            } catch (error) {
+              console.error('Ошибка при синхронизации:', error);
+              showNotification(error.message, 'error');
+            }
+          });
+        } else {
+          statusContainer.innerHTML = `
+            <div class="github-status disabled">
+              <span class="github-status-icon">⚠</span>
+              <span>GitHub база данных не настроена или отключена</span>
+            </div>
+            <p class="form-text">Данные хранятся только в памяти сервера и будут утеряны при перезапуске. Используйте экспорт для сохранения данных.</p>
+          `;
+          
+          repoDetails.style.display = 'none';
+          collectionsInfo.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Ошибка при отображении статуса GitHub БД:', error);
+        statusContainer.innerHTML = `
+          <div class="github-status disabled">
+            <span class="github-status-icon">✗</span>
+            <span>Ошибка при получении статуса GitHub базы данных: ${error.message}</span>
+          </div>
+        `;
+        
+        repoDetails.style.display = 'none';
+        collectionsInfo.style.display = 'none';
+      }
+    }
     
     // Экспорт данных
     document.getElementById('export-btn').addEventListener('click', async () => {
@@ -518,30 +707,28 @@
         }
         
         const data = await response.json();
-        const timestamp = new Date().toISOString();
         
         // Показываем информацию о данных
-        document.getElementById('users-count').textContent = data.users ? data.users.length : 0;
-        document.getElementById('access-codes-count').textContent = data.accessCodes ? data.accessCodes.length : 0;
-        document.getElementById('sessions-count').textContent = data.disconnectedSessions ? data.disconnectedSessions.length : 0;
-        document.getElementById('messages-count').textContent = data.clientsMessageHistory ? data.clientsMessageHistory.length : 0;
+        document.getElementById('users-count').textContent = data.users ? Object.keys(data.users).length : 0;
+        document.getElementById('access-codes-count').textContent = data.accessCodes ? Object.keys(data.accessCodes).length : 0;
+        document.getElementById('sessions-count').textContent = data.activeSessions ? Object.keys(data.activeSessions).length : 0;
+        document.getElementById('messages-count').textContent = data.clientsMessageHistory ? Object.keys(data.clientsMessageHistory).length : 0;
         document.getElementById('export-timestamp').textContent = `Дата экспорта: ${new Date().toLocaleString()}`;
         document.getElementById('export-data-info').style.display = 'block';
         
         // Фильтруем данные по выбранным опциям
-        const exportData = {};
+        const exportData = {
+          meta: data.meta || {
+            exportDate: new Date().toISOString(),
+            version: '1.0'
+          }
+        };
+        
         selectedOptions.forEach(option => {
           if (data[option]) {
             exportData[option] = data[option];
           }
         });
-        
-        // Добавляем метаданные
-        exportData.metadata = {
-          timestamp,
-          version: '1.0',
-          exportDate: new Date().toLocaleString()
-        };
         
         // Загружаем файл
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -576,18 +763,23 @@
           const data = JSON.parse(e.target.result);
           
           // Проверяем валидность данных
-          if (!data || typeof data !== 'object' || !data.metadata) {
+          if (!data || typeof data !== 'object') {
             showNotification('Выбранный файл не содержит корректных данных для импорта', 'error');
             document.getElementById('import-btn').disabled = true;
             return;
           }
           
           // Показываем информацию о данных
-          document.getElementById('import-users-count').textContent = data.users ? data.users.length : 0;
-          document.getElementById('import-access-codes-count').textContent = data.accessCodes ? data.accessCodes.length : 0;
-          document.getElementById('import-sessions-count').textContent = data.disconnectedSessions ? data.disconnectedSessions.length : 0;
-          document.getElementById('import-messages-count').textContent = data.clientsMessageHistory ? data.clientsMessageHistory.length : 0;
-          document.getElementById('import-timestamp').textContent = `Дата экспорта: ${data.metadata.exportDate || 'Не указана'}`;
+          document.getElementById('import-users-count').textContent = data.users ? Object.keys(data.users).length : 0;
+          document.getElementById('import-access-codes-count').textContent = data.accessCodes ? Object.keys(data.accessCodes).length : 0;
+          document.getElementById('import-sessions-count').textContent = data.activeSessions ? Object.keys(data.activeSessions).length : 0;
+          document.getElementById('import-messages-count').textContent = data.clientsMessageHistory ? Object.keys(data.clientsMessageHistory).length : 0;
+          
+          const exportDate = data.meta && data.meta.exportDate 
+            ? new Date(data.meta.exportDate).toLocaleString() 
+            : 'Не указана';
+          
+          document.getElementById('import-timestamp').textContent = `Дата экспорта: ${exportDate}`;
           document.getElementById('import-data-info').style.display = 'block';
           
           // Активируем кнопку импорта
@@ -620,28 +812,28 @@
         return showNotification('Выберите хотя бы один тип данных для импорта', 'warning');
       }
       
-      // Получаем опцию очистки данных
-      const clearBeforeImport = document.getElementById('clear-before-import').checked;
-      
       // Показываем прогресс
       document.getElementById('import-progress').style.display = 'block';
       document.getElementById('import-progress-fill').style.width = '10%';
       document.getElementById('import-progress-text').textContent = 'Подготовка к импорту...';
       
       try {
+        // Фильтруем данные по выбранным опциям
+        const dataToImport = {};
+        
+        for (const [key, value] of Object.entries(window.importData)) {
+          if (key === 'meta' || selectedOptions[key]) {
+            dataToImport[key] = value;
+          }
+        }
+        
         // Отправляем данные для импорта
         const response = await fetch('/api/import-data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            data: window.importData,
-            importOptions: {
-              ...selectedOptions,
-              clearBeforeImport
-            }
-          })
+          body: JSON.stringify(dataToImport)
         });
         
         // Имитируем прогресс
@@ -665,10 +857,10 @@
         }, 2000);
         
         // Показываем результат
-        const importedItems = result.importedItems;
-        const importMessage = `Импорт завершен! Импортировано: ${importedItems.users || 0} пользователей, ${importedItems.accessCodes || 0} кодов доступа, ${importedItems.disconnectedSessions || 0} сессий, ${importedItems.clientsMessageHistory || 0} сообщений.`;
+        showNotification(result.message || 'Данные успешно импортированы', 'success');
         
-        showNotification(importMessage, 'success');
+        // Обновляем статус GitHub БД
+        renderGitHubDBStatus();
         
         // Сбрасываем форму
         document.getElementById('import-file').value = '';
@@ -680,6 +872,12 @@
         document.getElementById('import-progress').style.display = 'none';
         showNotification(error.message, 'error');
       }
+    });
+
+    // Инициализация страницы
+    document.addEventListener('DOMContentLoaded', () => {
+      // Загружаем статус GitHub БД
+      renderGitHubDBStatus();
     });
   </script>
 </body>

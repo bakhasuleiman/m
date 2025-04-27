@@ -231,6 +231,60 @@ app.delete('/api/access-codes/:code', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// API для GitHub базы данных
+// Получение статуса GitHub базы данных
+app.get('/api/github-db-status', requireAuth, (req, res) => {
+  const isEnabled = dbManager.initialized;
+  const result = {
+    isEnabled,
+    lastSync: new Date().toISOString()
+  };
+  
+  if (isEnabled) {
+    // Добавляем информацию о GitHub репозитории
+    result.owner = dbManager.config.owner;
+    result.repo = dbManager.config.repo;
+    result.branch = dbManager.config.branch;
+    result.dataFolder = dbManager.config.dataFolder;
+    
+    // Добавляем информацию о коллекциях
+    result.collections = {};
+    dbManager.getCollectionNames().forEach(name => {
+      const collection = dbManager.collection(name);
+      result.collections[name] = collection.size();
+    });
+  }
+  
+  res.json(result);
+});
+
+// Принудительная синхронизация с GitHub
+app.post('/api/github-db-sync', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    if (!dbManager.initialized) {
+      return res.status(400).json({
+        success: false,
+        error: 'GitHub база данных не инициализирована'
+      });
+    }
+    
+    // Запускаем принудительное сохранение всех коллекций
+    await dbManager.saveAll();
+    
+    res.json({
+      success: true,
+      message: 'Синхронизация с GitHub выполнена успешно',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Ошибка при синхронизации с GitHub: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: `Ошибка при синхронизации с GitHub: ${error.message}`
+    });
+  }
+});
+
 // Настройка WebSocket сервера
 const wss = new WebSocket.Server({ server });
 
