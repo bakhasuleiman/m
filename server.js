@@ -1339,6 +1339,33 @@ async function initializeAndStartServer() {
 
 // Функция запуска сервера
 function startServer() {
+  // Запускаем пинг-воркер
+  const { fork } = require('child_process');
+  const pingWorker = fork(path.join(__dirname, 'ping-worker.js'));
+
+  // Обработка ошибок в пинг-воркере
+  pingWorker.on('error', (err) => {
+    console.error('Ping worker error:', err);
+  });
+
+  // Обработка завершения пинг-воркера
+  pingWorker.on('exit', (code) => {
+    console.log(`Ping worker exited with code ${code}`);
+  });
+
+  // Обработка завершения основного процесса
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    pingWorker.kill();
+    gracefulShutdown();
+  });
+
+  process.on('SIGINT', () => {
+    console.log('SIGINT received. Shutting down gracefully...');
+    pingWorker.kill();
+    gracefulShutdown();
+  });
+
   server.listen(port, () => {
     console.log(`Сервер запущен на порту ${port}`);
   });
