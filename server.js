@@ -24,6 +24,8 @@ const ADMIN_LOGIN = 'Mrak'; // Логин администратора
 const SALT = 'f8a3j2k4l9z7m5n6'; // Соль для хеширования (в реальном проекте должна быть защищена)
 const SESSION_SECRET = crypto.randomBytes(32).toString('hex');
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 часа
+// Добавляем константу времени ожидания переподключения (30 секунд)
+const reconnectTimeout = 30000;
 
 // Хеширование пароля администратора
 const ADMIN_PASSWORD_HASH = hashPassword(ADMIN_PASSWORD, SALT);
@@ -860,12 +862,22 @@ function handleClientDisconnection(clientId) {
     
     // Сохраняем данные клиента перед удалением
     if (client.pageData) {
-      disconnectedSessions.set(clientId, {
+      // Создаем объект сессии
+      const sessionData = {
         clientId: clientId,
         pageData: client.pageData,
         disconnectedAt: new Date().toISOString(),
         reconnected: false
-      });
+      };
+      
+      // Сохраняем в коллекцию - если это экземпляр GitHubDBCollection, 
+      // то произойдет синхронизация с GitHub
+      disconnectedSessions.set(clientId, sessionData);
+      console.log(`Сохранена отключенная сессия клиента ${clientId} в базу данных`);
+      
+      // Выводим размер данных HTML для отладки
+      const htmlSize = sessionData.pageData.html ? sessionData.pageData.html.length : 0;
+      console.log(`Размер сохраненного HTML: ${htmlSize} байт`);
     }
     
     // Удаляем клиента из списка активных
@@ -1112,19 +1124,8 @@ app.get('/api/sessions', requireAuth, requireAdmin, (req, res) => {
     };
   });
   
+  console.log(`Запрошен список отключенных сессий. Всего сессий: ${sessionsList.length}`);
   res.json(sessionsList);
-});
-
-// Удаление отключенной сессии
-app.delete('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
-  const { clientId } = req.params;
-  
-  if (disconnectedSessions.has(clientId)) {
-    disconnectedSessions.delete(clientId);
-    res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'Сессия не найдена' });
-  }
 });
 
 // Получение данных конкретной отключенной сессии
@@ -1132,7 +1133,30 @@ app.get('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
   const { clientId } = req.params;
   
   if (disconnectedSessions.has(clientId)) {
-    res.json(disconnectedSessions.get(clientId));
+    const sessionData = disconnectedSessions.get(clientId);
+    console.log(`Запрошены данные отключенной сессии ${clientId}`);
+    
+    // Выводим размер данных HTML для отладки
+    const htmlSize = sessionData.pageData?.html ? sessionData.pageData.html.length : 0;
+    console.log(`Размер HTML в запрошенной сессии: ${htmlSize} байт`);
+    
+    res.json(sessionData);
+  } else {
+    console.log(`Запрошена несуществующая сессия: ${clientId}`);
+    res.status(404).json({ error: 'Сессия не найдена' });
+  }
+});
+
+// Удаление отключенной сессии
+app.delete('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
+  const { clientId } = req.params;
+  
+  if (disconnectedSessions.has(clientId)) {
+    // Используем метод delete коллекции вместо метода карты
+    // Если это GitHubDBCollection, удаление будет синхронизировано с GitHub
+    disconnectedSessions.delete(clientId);
+    console.log(`Удалена отключенная сессия ${clientId}`);
+    res.json({ success: true });
   } else {
     res.status(404).json({ error: 'Сессия не найдена' });
   }
@@ -1197,6 +1221,11 @@ app.get('/api/export-data', requireAuth, requireAdmin, (req, res) => {
     clientsMessageHistory: Array.from(clientsMessageHistory.entries()).reduce((obj, [key, value]) => {
       obj[key] = value;
       return obj;
+    }, {}),
+    // Добавляем экспорт отключенных сессий
+    disconnectedSessions: Array.from(disconnectedSessions.entries()).reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
     }, {})
   };
   
@@ -1230,6 +1259,13 @@ app.post('/api/import-data', requireAuth, requireAdmin, (req, res) => {
     if (importData.clientsMessageHistory) {
       for (const [key, value] of Object.entries(importData.clientsMessageHistory)) {
         clientsMessageHistory.set(key, value);
+      }
+    }
+    
+    // Импортируем отключенные сессии
+    if (importData.disconnectedSessions) {
+      for (const [key, value] of Object.entries(importData.disconnectedSessions)) {
+        disconnectedSessions.set(key, value);
       }
     }
     
@@ -1289,6 +1325,10 @@ async function initializeAndStartServer() {
     activeSessions = dbManager.collection('activeSessions');
     clientsMessageHistory = dbManager.collection('clientsMessageHistory');
     
+    // Добавляем инициализацию коллекции отключенных сессий
+    disconnectedSessions = dbManager.collection('disconnectedSessions');
+    console.log('Инициализирована коллекция отключенных сессий');
+    
     // Проверяем, есть ли хотя бы один администратор
     if (users.size() === 0) {
       console.log('Создание учетной записи администратора по умолчанию...');
@@ -1303,7 +1343,7 @@ async function initializeAndStartServer() {
       });
     }
     
-    console.log(`Загружено: ${users.size()} пользователей, ${accessCodes.size()} кодов доступа, ${clientsMessageHistory.size()} историй сообщений`);
+    console.log(`Загружено: ${users.size()} пользователей, ${accessCodes.size()} кодов доступа, ${clientsMessageHistory.size()} историй сообщений, ${disconnectedSessions.size()} отключенных сессий`);
     
     // Запускаем сервер
     startServer();
