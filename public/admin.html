@@ -646,6 +646,124 @@
         height: auto;
       }
     }
+
+    /* Стили для улучшенной вкладки HTML */
+    .html-tab {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .html-controls {
+      display: flex;
+      padding: 8px;
+      background-color: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-container {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+      gap: 4px;
+    }
+
+    #html-search {
+      width: 200px;
+    }
+
+    #search-result-count {
+      font-size: 12px;
+      color: #666;
+      margin: 0 4px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .html-viewer {
+      display: flex;
+      flex-grow: 1;
+      overflow: auto;
+      position: relative;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      background-color: #f8f8f8;
+    }
+
+    .line-numbers {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 8px 8px 0;
+      background-color: #f1f1f1;
+      border-right: 1px solid #ddd;
+      text-align: right;
+      user-select: none;
+      color: #999;
+      min-width: 40px;
+    }
+
+    .line-numbers span {
+      padding: 0 8px;
+    }
+
+    .html-content {
+      flex-grow: 1;
+      margin: 0;
+      padding: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      tab-size: 2;
+    }
+
+    /* Подсветка синтаксиса */
+    .html-tag {
+      color: #0000ff;
+    }
+
+    .html-attr {
+      color: #7f0055;
+      font-weight: bold;
+    }
+
+    .html-string {
+      color: #2a9d1a;
+    }
+
+    .html-comment {
+      color: #888;
+      font-style: italic;
+    }
+
+    /* Подсветка поиска */
+    .search-match {
+      background-color: rgba(255, 255, 0, 0.3);
+      padding: 2px 0;
+    }
+
+    .search-match.current {
+      background-color: orange;
+      color: white;
+    }
+
+    /* Медиа-запрос для адаптивности */
+    @media (max-width: 768px) {
+      .html-controls {
+        flex-wrap: wrap;
+      }
+      
+      .search-container {
+        margin-left: 0;
+        margin-top: 8px;
+        width: 100%;
+      }
+      
+      #html-search {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -709,7 +827,21 @@
         
         <div class="tab-content" id="html-tab">
           <div class="html-tab">
-            <div class="html-content" id="html-content"></div>
+            <div class="html-controls">
+              <button id="copy-html-btn" class="btn btn-sm btn-primary">Копировать HTML</button>
+              <button id="format-html-btn" class="btn btn-sm btn-secondary">Форматировать</button>
+              <button id="download-html-btn" class="btn btn-sm btn-info">Скачать HTML</button>
+              <div class="search-container">
+                <input type="text" id="html-search" placeholder="Поиск в HTML" class="form-control form-control-sm">
+                <span id="search-result-count">0/0</span>
+                <button id="search-prev-btn" class="btn btn-sm btn-outline-secondary">⬆</button>
+                <button id="search-next-btn" class="btn btn-sm btn-outline-secondary">⬇</button>
+              </div>
+            </div>
+            <div class="html-viewer">
+              <div class="line-numbers" id="line-numbers"></div>
+              <pre id="html-content" class="html-content"></pre>
+            </div>
           </div>
         </div>
         
@@ -1156,7 +1288,7 @@
         extractAndDisplayAllText(pageData.html);
         
         // Отображаем HTML код
-        htmlContent.textContent = pageData.html;
+        displayFormattedHtml(pageData.html);
       }
       
       // Отображение статического превью HTML
@@ -1912,6 +2044,231 @@
         console.error('Ошибка при выходе из системы:', error);
       }
     });
+
+    // Функция для отображения форматированного HTML с подсветкой синтаксиса
+    function displayFormattedHtml(html) {
+      const htmlContent = document.getElementById('html-content');
+      const lineNumbers = document.getElementById('line-numbers');
+      
+      // Экранируем HTML для безопасного отображения
+      const escapedHtml = html.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      // Простая подсветка синтаксиса
+      const coloredHtml = escapedHtml
+        // Подсветка тегов
+        .replace(/&lt;(\/?[a-zA-Z][a-zA-Z0-9_-]*)([^&]*?)&gt;/g, '<span class="html-tag">&lt;$1$2&gt;</span>')
+        // Подсветка атрибутов
+        .replace(/(\s+)([a-zA-Z][a-zA-Z0-9_-]*)(\s*=\s*)/g, '$1<span class="html-attr">$2</span>$3')
+        // Подсветка значений атрибутов в двойных кавычках
+        .replace(/(".*?")/g, '<span class="html-string">$1</span>')
+        // Подсветка значений атрибутов в одинарных кавычках
+        .replace(/('.*?')/g, '<span class="html-string">$1</span>')
+        // Подсветка комментариев
+        .replace(/&lt;!--.*?--&gt;/g, '<span class="html-comment">$&</span>');
+      
+      htmlContent.innerHTML = coloredHtml;
+      
+      // Добавляем нумерацию строк
+      const lines = escapedHtml.split('\n');
+      lineNumbers.innerHTML = '';
+      for (let i = 1; i <= lines.length; i++) {
+        const lineNumberSpan = document.createElement('span');
+        lineNumberSpan.textContent = i;
+        lineNumbers.appendChild(lineNumberSpan);
+      }
+      
+      // Добавляем обработчики событий для кнопок
+      setupHtmlControls(html);
+    }
+    
+    // Настройка элементов управления HTML
+    function setupHtmlControls(html) {
+      const copyHtmlBtn = document.getElementById('copy-html-btn');
+      const formatHtmlBtn = document.getElementById('format-html-btn');
+      const downloadHtmlBtn = document.getElementById('download-html-btn');
+      const htmlSearch = document.getElementById('html-search');
+      const searchPrevBtn = document.getElementById('search-prev-btn');
+      const searchNextBtn = document.getElementById('search-next-btn');
+      const searchResultCount = document.getElementById('search-result-count');
+      
+      // Копирование HTML в буфер обмена
+      copyHtmlBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(html).then(function() {
+          copyHtmlBtn.textContent = 'Скопировано!';
+          setTimeout(() => {
+            copyHtmlBtn.textContent = 'Копировать HTML';
+          }, 2000);
+        });
+      });
+      
+      // Форматирование HTML
+      formatHtmlBtn.addEventListener('click', function() {
+        try {
+          // Простое форматирование HTML
+          const formattedHtml = formatHtml(html);
+          displayFormattedHtml(formattedHtml);
+          
+          // Уведомление об успешном форматировании
+          formatHtmlBtn.textContent = 'Отформатировано!';
+          setTimeout(() => {
+            formatHtmlBtn.textContent = 'Форматировать';
+          }, 2000);
+        } catch (error) {
+          console.error('Ошибка при форматировании HTML:', error);
+        }
+      });
+      
+      // Скачивание HTML файла
+      downloadHtmlBtn.addEventListener('click', function() {
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `page-${new Date().toISOString().replace(/[:.]/g, '-')}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      
+      // Поиск в HTML
+      let currentMatchIndex = -1;
+      let matches = [];
+      
+      htmlSearch.addEventListener('input', function() {
+        const searchText = htmlSearch.value.trim();
+        highlightSearchMatches(searchText);
+      });
+      
+      searchPrevBtn.addEventListener('click', function() {
+        if (matches.length > 0) {
+          currentMatchIndex = (currentMatchIndex - 1 + matches.length) % matches.length;
+          scrollToMatch(currentMatchIndex);
+        }
+      });
+      
+      searchNextBtn.addEventListener('click', function() {
+        if (matches.length > 0) {
+          currentMatchIndex = (currentMatchIndex + 1) % matches.length;
+          scrollToMatch(currentMatchIndex);
+        }
+      });
+      
+      // Функция для подсветки результатов поиска
+      function highlightSearchMatches(searchText) {
+        const htmlContent = document.getElementById('html-content');
+        
+        // Сбрасываем предыдущие подсветки
+        htmlContent.innerHTML = htmlContent.innerHTML.replace(/<mark class="search-match.*?>(.*?)<\/mark>/g, '$1');
+        
+        if (!searchText) {
+          searchResultCount.textContent = '0/0';
+          matches = [];
+          currentMatchIndex = -1;
+          return;
+        }
+        
+        const htmlContentText = htmlContent.textContent;
+        const regex = new RegExp(escapeRegExp(searchText), 'gi');
+        let match;
+        matches = [];
+        
+        while ((match = regex.exec(htmlContentText)) !== null) {
+          matches.push({
+            index: match.index,
+            length: match[0].length
+          });
+        }
+        
+        if (matches.length > 0) {
+          // Подсвечиваем все совпадения
+          let html = htmlContent.innerHTML;
+          for (let i = matches.length - 1; i >= 0; i--) {
+            const match = matches[i];
+            const before = html.substring(0, match.index);
+            const matchText = html.substring(match.index, match.index + match.length);
+            const after = html.substring(match.index + match.length);
+            
+            html = before + 
+                   `<mark class="search-match${i === 0 ? ' current' : ''}" id="search-match-${i}">${matchText}</mark>` + 
+                   after;
+          }
+          htmlContent.innerHTML = html;
+          
+          currentMatchIndex = 0;
+          scrollToMatch(currentMatchIndex);
+          searchResultCount.textContent = `1/${matches.length}`;
+        } else {
+          searchResultCount.textContent = '0/0';
+          currentMatchIndex = -1;
+        }
+      }
+      
+      // Прокрутка к текущему совпадению
+      function scrollToMatch(index) {
+        const match = document.getElementById(`search-match-${index}`);
+        if (match) {
+          // Удаляем класс 'current' у всех меток
+          document.querySelectorAll('.search-match').forEach(el => {
+            el.classList.remove('current');
+          });
+          
+          // Добавляем класс 'current' текущей метке
+          match.classList.add('current');
+          
+          // Прокручиваем к метке
+          match.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+          
+          searchResultCount.textContent = `${index + 1}/${matches.length}`;
+        }
+      }
+      
+      // Функция для экранирования спецсимволов в регулярных выражениях
+      function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+    }
+    
+    // Функция для форматирования HTML
+    function formatHtml(html) {
+      let formatted = '';
+      let indent = 0;
+      const tab = '  ';
+      let i = 0;
+      
+      while (i < html.length) {
+        let char = html[i];
+        
+        if (char === '<') {
+          // Проверяем, является ли это закрывающим тегом
+          if (html[i + 1] === '/') {
+            indent--;
+            formatted += '\n' + tab.repeat(indent) + '<';
+          } else if (html.substring(i, i + 4) === '<!--') {
+            // Комментарий
+            formatted += '\n' + tab.repeat(indent) + '<';
+          } else {
+            // Открывающий тег
+            formatted += '\n' + tab.repeat(indent) + '<';
+            indent++;
+          }
+        } else if (char === '>') {
+          formatted += '>';
+          // Если следующий символ это еще один открывающий тег, добавляем перевод строки
+          if (i + 1 < html.length && html[i + 1] === '<') {
+            formatted += '\n' + tab.repeat(indent);
+          }
+        } else {
+          formatted += char;
+        }
+        
+        i++;
+      }
+      
+      // Удаляем лишние переводы строк
+      return formatted.trim().replace(/\n\s*\n/g, '\n');
+    }
   </script>
   
   <div style="text-align: center; margin-top: 20px; padding: 15px; border-top: 1px solid var(--border-color);">
