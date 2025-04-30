@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>История сессий</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Добавление библиотеки highlight.js для подсветки синтаксиса -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/xml.min.js"></script>
+  <!-- Добавление библиотеки js-beautify для форматирования кода -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
   <style>
     :root {
       --primary-color: #5046e5;
@@ -251,27 +257,29 @@
       bottom: 0;
       background-color: rgba(0, 0, 0, 0.5);
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       z-index: 1000;
-      visibility: hidden;
       opacity: 0;
-      transition: opacity 0.3s, visibility 0.3s;
+      visibility: hidden;
+      transition: all 0.3s;
     }
     
     .modal-backdrop.visible {
-      visibility: visible;
       opacity: 1;
+      visibility: visible;
     }
     
     .modal {
       background-color: white;
       border-radius: 8px;
-      width: 100%;
-      max-width: 600px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      overflow: hidden;
-      transform: translateY(20px);
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 900px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(-20px);
       transition: transform 0.3s;
     }
     
@@ -283,8 +291,8 @@
       padding: 1rem;
       border-bottom: 1px solid var(--border-color);
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
     }
     
     .modal-title {
@@ -293,9 +301,9 @@
     }
     
     .modal-body {
-      padding: 1.5rem;
-      max-height: 70vh;
+      padding: 1rem;
       overflow-y: auto;
+      max-height: calc(90vh - 110px);
     }
     
     .modal-footer {
@@ -375,6 +383,137 @@
       font-size: 0.875rem;
       color: var(--text-light);
     }
+    
+    /* Новые стили для отображения HTML */
+    .code-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem;
+      background-color: #f5f5f5;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .code-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .code-tab {
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      background-color: #f5f5f5;
+      font-size: 0.8rem;
+    }
+    
+    .code-tab.active {
+      background-color: white;
+      border-bottom-color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .preview-iframe {
+      width: 100%;
+      height: 300px;
+      border: 1px solid var(--border-color);
+      background-color: white;
+    }
+    
+    .search-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+    
+    .hljs {
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+    
+    /* Стили для страниц пагинации */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 1rem;
+      gap: 0.5rem;
+    }
+    
+    .pagination-btn {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: white;
+    }
+    
+    .pagination-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    /* Стили для индикатора загрузки */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary-color);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Стили для информации о хранении HTML */
+    .html-storage-info {
+      background-color: rgba(80, 70, 229, 0.05);
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    
+    .storage-badge {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -399,15 +538,38 @@
     <div class="card">
       <div class="card-header">
         <h1 class="card-title">История сессий клиентов</h1>
+        <div class="search-container">
+          <input type="text" id="search-input" class="search-input" placeholder="Поиск по URL, заголовку или ID...">
+          <select id="filter-date" class="search-input">
+            <option value="all">Все даты</option>
+            <option value="today">Сегодня</option>
+            <option value="yesterday">Вчера</option>
+            <option value="week">Последние 7 дней</option>
+            <option value="month">Последние 30 дней</option>
+          </select>
+        </div>
         <div class="filters">
           <div class="filter-item">
             <input type="checkbox" id="filter-reconnected" checked>
             <label for="filter-reconnected" class="filter-label">Показывать переподключенные</label>
           </div>
+          <div class="filter-item">
+            <select id="filter-sort" class="search-input">
+              <option value="date-desc">По дате (сначала новые)</option>
+              <option value="date-asc">По дате (сначала старые)</option>
+              <option value="url">По URL</option>
+              <option value="title">По заголовку</option>
+            </select>
+          </div>
         </div>
       </div>
       
-      <table id="sessions-table">
+      <!-- Индикатор загрузки -->
+      <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+      </div>
+      
+      <table id="sessions-table" style="display: none;">
         <thead>
           <tr>
             <th>ID клиента</th>
@@ -422,6 +584,9 @@
           <!-- Данные будут загружены через JavaScript -->
         </tbody>
       </table>
+      
+      <!-- Пагинация -->
+      <div id="pagination" class="pagination"></div>
       
       <!-- Пустое состояние -->
       <div id="empty-state" class="empty-state" style="display: none;">
@@ -466,12 +631,39 @@
           
           <dt>Текст страницы:</dt>
           <dd>
+            <div class="code-toolbar">
+              <div class="code-actions">
+                <button id="copy-text-btn" class="action-btn">Копировать</button>
+                <button id="download-text-btn" class="action-btn">Скачать</button>
+              </div>
+            </div>
             <div id="detail-text" class="session-content"></div>
           </dd>
           
           <dt>HTML страницы:</dt>
           <dd>
-            <div id="detail-html" class="session-content"></div>
+            <div class="code-toolbar">
+              <div class="code-tabs">
+                <button class="code-tab active" data-tab="code">Код</button>
+                <button class="code-tab" data-tab="preview">Просмотр</button>
+                <button class="code-tab" data-tab="formatted">Форматировано</button>
+              </div>
+              <div class="code-actions">
+                <button id="copy-html-btn" class="action-btn">Копировать</button>
+                <button id="format-html-btn" class="action-btn">Форматировать</button>
+                <button id="download-html-btn" class="action-btn">Скачать</button>
+              </div>
+            </div>
+            
+            <div class="tab-content active" data-tab-content="code">
+              <pre><code id="detail-html-code" class="language-html"></code></pre>
+            </div>
+            <div class="tab-content" data-tab-content="preview">
+              <iframe id="detail-html-preview" class="preview-iframe"></iframe>
+            </div>
+            <div class="tab-content" data-tab-content="formatted">
+              <pre><code id="detail-html-formatted" class="language-html"></code></pre>
+            </div>
           </dd>
         </dl>
       </div>
@@ -508,7 +700,11 @@
   <script>
     // Глобальные переменные
     let sessions = [];
+    let filteredSessions = [];
     let currentSessionId = null;
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let sessionDetails = null;
     
     // DOM элементы
     const sessionsTable = document.getElementById('sessions-table');
@@ -516,10 +712,15 @@
     const detailsModal = document.getElementById('details-modal');
     const deleteModal = document.getElementById('delete-modal');
     const filterReconnected = document.getElementById('filter-reconnected');
+    const filterDate = document.getElementById('filter-date');
+    const filterSort = document.getElementById('filter-sort');
+    const searchInput = document.getElementById('search-input');
     const deleteClientId = document.getElementById('delete-client-id');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
     const deleteSessionBtn = document.getElementById('delete-session-btn');
     const logoutBtn = document.getElementById('logout-btn');
+    const paginationContainer = document.getElementById('pagination');
+    const loadingIndicator = document.getElementById('loading');
     
     // Форматирование даты
     function formatDate(dateString) {
@@ -537,6 +738,10 @@
     // Загрузка списка сессий
     async function loadSessions() {
       try {
+        loadingIndicator.style.display = 'flex';
+        sessionsTable.style.display = 'none';
+        emptyState.style.display = 'none';
+        
         const response = await fetch('/api/sessions');
         
         if (!response.ok) {
@@ -544,36 +749,124 @@
         }
         
         sessions = await response.json();
-        renderSessions();
+        applyFiltersAndRender();
       } catch (error) {
         console.error('Ошибка при загрузке сессий:', error);
+        alert('Произошла ошибка при загрузке сессий: ' + error.message);
+      } finally {
+        loadingIndicator.style.display = 'none';
       }
     }
     
-    // Отрисовка таблицы сессий
-    function renderSessions() {
-      const tbody = sessionsTable.querySelector('tbody');
-      tbody.innerHTML = '';
-      
-      // Применяем фильтр
+    // Функция для применения фильтров и отображения сессий
+    function applyFiltersAndRender() {
+      // Получаем значения фильтров
       const showReconnected = filterReconnected.checked;
-      const filteredSessions = sessions.filter(session => 
-        showReconnected || !session.reconnected
-      );
+      const dateFilter = filterDate.value;
+      const sortBy = filterSort.value;
+      const searchTerm = searchInput.value.toLowerCase().trim();
       
+      // Фильтр по переподключению
+      filteredSessions = sessions.filter(session => {
+        if (!showReconnected && session.reconnected) {
+          return false;
+        }
+        
+        // Фильтр по поиску
+        if (searchTerm) {
+          const url = (session.url || '').toLowerCase();
+          const title = (session.title || '').toLowerCase();
+          const clientId = session.clientId.toLowerCase();
+          
+          if (!url.includes(searchTerm) && !title.includes(searchTerm) && !clientId.includes(searchTerm)) {
+            return false;
+          }
+        }
+        
+        // Фильтр по дате
+        if (dateFilter !== 'all') {
+          const now = new Date();
+          const disconnectedDate = new Date(session.disconnectedAt);
+          
+          switch (dateFilter) {
+            case 'today':
+              if (disconnectedDate.toDateString() !== now.toDateString()) {
+                return false;
+              }
+              break;
+            case 'yesterday':
+              const yesterday = new Date(now);
+              yesterday.setDate(yesterday.getDate() - 1);
+              if (disconnectedDate.toDateString() !== yesterday.toDateString()) {
+                return false;
+              }
+              break;
+            case 'week':
+              const weekAgo = new Date(now);
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              if (disconnectedDate < weekAgo) {
+                return false;
+              }
+              break;
+            case 'month':
+              const monthAgo = new Date(now);
+              monthAgo.setDate(monthAgo.getDate() - 30);
+              if (disconnectedDate < monthAgo) {
+                return false;
+              }
+              break;
+          }
+        }
+        
+        return true;
+      });
+      
+      // Сортировка
+      filteredSessions.sort((a, b) => {
+        switch (sortBy) {
+          case 'date-asc':
+            return new Date(a.disconnectedAt) - new Date(b.disconnectedAt);
+          case 'date-desc':
+            return new Date(b.disconnectedAt) - new Date(a.disconnectedAt);
+          case 'url':
+            return (a.url || '').localeCompare(b.url || '');
+          case 'title':
+            return (a.title || '').localeCompare(b.title || '');
+          default:
+            return new Date(b.disconnectedAt) - new Date(a.disconnectedAt);
+        }
+      });
+      
+      renderSessions();
+    }
+    
+    // Отрисовка таблицы сессий с пагинацией
+    function renderSessions() {
       if (filteredSessions.length === 0) {
         emptyState.style.display = 'block';
         sessionsTable.style.display = 'none';
+        paginationContainer.innerHTML = '';
         return;
       }
       
       emptyState.style.display = 'none';
       sessionsTable.style.display = 'table';
       
-      // Сортировка сессий по дате отключения (новые сверху)
-      filteredSessions.sort((a, b) => new Date(b.disconnectedAt) - new Date(a.disconnectedAt));
+      // Рассчитываем пагинацию
+      const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
+      if (currentPage > totalPages) {
+        currentPage = 1;
+      }
       
-      filteredSessions.forEach(session => {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = Math.min(start + itemsPerPage, filteredSessions.length);
+      const currentSessions = filteredSessions.slice(start, end);
+      
+      // Отрисовка таблицы
+      const tbody = sessionsTable.querySelector('tbody');
+      tbody.innerHTML = '';
+      
+      currentSessions.forEach(session => {
         const tr = document.createElement('tr');
         
         tr.innerHTML = `
@@ -603,6 +896,64 @@
       document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', showDeleteConfirmation);
       });
+      
+      // Отрисовка пагинации
+      renderPagination(totalPages);
+    }
+    
+    // Отрисовка элементов пагинации
+    function renderPagination(totalPages) {
+      paginationContainer.innerHTML = '';
+      
+      if (totalPages <= 1) {
+        return;
+      }
+      
+      // Кнопка "Предыдущая"
+      if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.classList.add('pagination-btn');
+        prevBtn.textContent = '←';
+        prevBtn.addEventListener('click', () => {
+          currentPage--;
+          renderSessions();
+        });
+        paginationContainer.appendChild(prevBtn);
+      }
+      
+      // Кнопки с номерами страниц
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+      
+      if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.classList.add('pagination-btn');
+        if (i === currentPage) {
+          pageBtn.classList.add('active');
+        }
+        pageBtn.textContent = i;
+        pageBtn.addEventListener('click', () => {
+          currentPage = i;
+          renderSessions();
+        });
+        paginationContainer.appendChild(pageBtn);
+      }
+      
+      // Кнопка "Следующая"
+      if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.classList.add('pagination-btn');
+        nextBtn.textContent = '→';
+        nextBtn.addEventListener('click', () => {
+          currentPage++;
+          renderSessions();
+        });
+        paginationContainer.appendChild(nextBtn);
+      }
     }
     
     // Просмотр деталей сессии
@@ -611,13 +962,16 @@
       currentSessionId = clientId;
       
       try {
+        loadingIndicator.style.display = 'flex';
+        
+        // Запрашиваем базовые данные сессии (без полного HTML, если он хранится отдельно)
         const response = await fetch(`/api/sessions/${clientId}`);
         
         if (!response.ok) {
           throw new Error('Ошибка загрузки деталей сессии');
         }
         
-        const sessionDetails = await response.json();
+        sessionDetails = await response.json();
         
         // Заполняем данные в модальном окне
         document.getElementById('detail-client-id').textContent = sessionDetails.clientId;
@@ -626,16 +980,102 @@
         document.getElementById('detail-disconnected-at').textContent = formatDate(sessionDetails.disconnectedAt);
         document.getElementById('detail-status').textContent = sessionDetails.reconnected ? 'Переподключен' : 'Отключен';
         
-        // HTML и текст содержимого
+        // Текст содержимого
         document.getElementById('detail-text').textContent = sessionDetails.pageData?.text || 'Текст отсутствует';
-        document.getElementById('detail-html').textContent = sessionDetails.pageData?.html || 'HTML отсутствует';
+        
+        // Проверяем, нужно ли подгрузить полный HTML отдельно
+        let htmlContent = '';
+        
+        if (sessionDetails.pageData?.htmlNeedsFullLoad) {
+          // Добавляем сообщение о загрузке
+          document.getElementById('detail-html-code').textContent = 'Загрузка HTML из отдельного файла...';
+          document.getElementById('detail-html-formatted').textContent = 'Загрузка HTML из отдельного файла...';
+          
+          try {
+            // Запрашиваем полный HTML отдельным запросом
+            const htmlResponse = await fetch(`/api/sessions/${clientId}?fullHtml=true`);
+            
+            if (htmlResponse.ok) {
+              const fullData = await htmlResponse.json();
+              // Обновляем HTML-контент
+              htmlContent = fullData.pageData?.html || '<!-- HTML отсутствует -->';
+              // Обновляем данные в модели
+              sessionDetails.pageData.html = htmlContent;
+            } else {
+              htmlContent = '<!-- Ошибка при загрузке полного HTML -->';
+            }
+          } catch (error) {
+            console.error('Ошибка при загрузке полного HTML:', error);
+            htmlContent = '<!-- Ошибка при загрузке полного HTML: ' + error.message + ' -->';
+          }
+        } else {
+          // Используем уже имеющийся HTML
+          htmlContent = sessionDetails.pageData?.html || '<!-- HTML отсутствует -->';
+        }
+        
+        // Отображаем HTML с подсветкой синтаксиса
+        document.getElementById('detail-html-code').textContent = htmlContent;
+        
+        // Добавляем информацию, если HTML хранится отдельно
+        if (sessionDetails.pageData?.htmlStoredSeparately) {
+          // Добавляем индикатор, что HTML хранится отдельно
+          const htmlSizeInfo = document.createElement('div');
+          htmlSizeInfo.className = 'html-storage-info';
+          htmlSizeInfo.innerHTML = `
+            <div class="storage-badge">HTML хранится в отдельном файле</div>
+            <div>Размер HTML: ${formatFileSize(sessionDetails.pageData?.htmlSize || 0)}</div>
+          `;
+          
+          // Вставляем эту информацию перед HTML-контентом
+          const codeToolbar = document.querySelector('.code-toolbar');
+          if (codeToolbar) {
+            const existingInfo = document.querySelector('.html-storage-info');
+            if (existingInfo) {
+              existingInfo.remove();
+            }
+            codeToolbar.insertAdjacentElement('afterend', htmlSizeInfo);
+          }
+        }
+        
+        // Форматированный HTML
+        const formattedHtml = html_beautify(htmlContent, {
+          indent_size: 2,
+          wrap_line_length: 80,
+          preserve_newlines: true,
+          max_preserve_newlines: 2,
+          end_with_newline: true
+        });
+        document.getElementById('detail-html-formatted').textContent = formattedHtml;
+        
+        // Применяем подсветку синтаксиса
+        hljs.highlightAll();
+        
+        // Настраиваем предпросмотр HTML
+        const iframe = document.getElementById('detail-html-preview');
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
         
         // Открываем модальное окно
         detailsModal.classList.add('visible');
       } catch (error) {
         console.error('Ошибка при загрузке деталей сессии:', error);
-        alert('Не удалось загрузить детали сессии');
+        alert('Не удалось загрузить детали сессии: ' + error.message);
+      } finally {
+        loadingIndicator.style.display = 'none';
       }
+    }
+    
+    // Форматирование размера файла
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Байт';
+      
+      const k = 1024;
+      const sizes = ['Байт', 'КБ', 'МБ', 'ГБ'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
     // Показать подтверждение удаления
@@ -651,6 +1091,8 @@
       if (!currentSessionId) return;
       
       try {
+        loadingIndicator.style.display = 'flex';
+        
         const response = await fetch(`/api/sessions/${currentSessionId}`, {
           method: 'DELETE'
         });
@@ -667,8 +1109,57 @@
         await loadSessions();
       } catch (error) {
         console.error('Ошибка при удалении сессии:', error);
-        alert('Не удалось удалить сессию');
+        alert('Не удалось удалить сессию: ' + error.message);
+      } finally {
+        loadingIndicator.style.display = 'none';
       }
+    }
+    
+    // Копирование текста в буфер обмена
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          alert('Текст скопирован в буфер обмена');
+        })
+        .catch(err => {
+          console.error('Ошибка при копировании текста:', err);
+        });
+    }
+    
+    // Скачивание текста в файл
+    function downloadTextAsFile(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // Переключение вкладок
+    function initTabSwitching() {
+      const tabs = document.querySelectorAll('.code-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Снимаем активное состояние со всех вкладок
+          tabs.forEach(t => t.classList.remove('active'));
+          
+          // Устанавливаем активное состояние текущей вкладке
+          tab.classList.add('active');
+          
+          // Скрываем все содержимое вкладок
+          document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          
+          // Показываем содержимое активной вкладки
+          const tabId = tab.getAttribute('data-tab');
+          document.querySelector(`.tab-content[data-tab-content="${tabId}"]`).classList.add('active');
+        });
+      });
     }
     
     // Выход из системы
@@ -686,7 +1177,19 @@
       }
     }
     
-    // Обработчики событий
+    // Обработчики событий для фильтров
+    filterReconnected.addEventListener('change', applyFiltersAndRender);
+    filterDate.addEventListener('change', applyFiltersAndRender);
+    filterSort.addEventListener('change', applyFiltersAndRender);
+    
+    // Поиск с задержкой ввода (debounce)
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(applyFiltersAndRender, 300);
+    });
+    
+    // Обработчики событий для модальных окон
     document.querySelectorAll('.close-modal').forEach(btn => {
       btn.addEventListener('click', () => {
         detailsModal.classList.remove('visible');
@@ -699,17 +1202,98 @@
       });
     });
     
-    filterReconnected.addEventListener('change', renderSessions);
+    // Обработчики событий для кнопок работы с HTML
+    document.getElementById('copy-html-btn').addEventListener('click', async () => {
+      const activeTab = document.querySelector('.code-tab.active').getAttribute('data-tab');
+      let htmlContent;
+      
+      // Если HTML хранится отдельно и его еще нет в кэше, загружаем его
+      if (sessionDetails.pageData?.htmlStoredSeparately && !sessionDetails.pageData?.html?.includes('<')) {
+        try {
+          // Показываем индикатор загрузки
+          const copyBtn = document.getElementById('copy-html-btn');
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = 'Загрузка...';
+          
+          // Загружаем полный HTML
+          const response = await fetch(`/api/sessions/${currentSessionId}?fullHtml=true`);
+          
+          if (response.ok) {
+            const fullData = await response.json();
+            sessionDetails.pageData.html = fullData.pageData?.html || '<!-- HTML отсутствует -->';
+          } else {
+            throw new Error('Не удалось загрузить HTML');
+          }
+          
+          // Восстанавливаем текст кнопки
+          copyBtn.textContent = originalText;
+        } catch (error) {
+          console.error('Ошибка при загрузке HTML для копирования:', error);
+          alert('Не удалось загрузить HTML для копирования: ' + error.message);
+          return;
+        }
+      }
+      
+      if (activeTab === 'formatted') {
+        htmlContent = document.getElementById('detail-html-formatted').textContent;
+      } else {
+        htmlContent = sessionDetails.pageData?.html || '';
+      }
+      
+      copyToClipboard(htmlContent);
+    });
+    
+    document.getElementById('format-html-btn').addEventListener('click', () => {
+      // Переключаемся на вкладку с форматированным HTML
+      document.querySelector('.code-tab[data-tab="formatted"]').click();
+    });
+    
+    document.getElementById('download-html-btn').addEventListener('click', () => {
+      // Если HTML хранится отдельно, скачиваем его через специальный API-маршрут
+      if (sessionDetails.pageData?.htmlStoredSeparately) {
+        // Создаем ссылку на API для скачивания HTML
+        const downloadUrl = `/api/sessions/${currentSessionId}/html`;
+        
+        // Создаем временную ссылку для скачивания
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `html-session-${currentSessionId}-${new Date().toISOString().slice(0,10)}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Для HTML, хранящегося в самой сессии, используем стандартный метод
+        const htmlContent = sessionDetails.pageData?.html || '';
+        const filename = `html-session-${currentSessionId}-${new Date().toISOString().slice(0,10)}.html`;
+        downloadTextAsFile(htmlContent, filename);
+      }
+    });
+    
+    document.getElementById('copy-text-btn').addEventListener('click', () => {
+      const textContent = sessionDetails.pageData?.text || '';
+      copyToClipboard(textContent);
+    });
+    
+    document.getElementById('download-text-btn').addEventListener('click', () => {
+      const textContent = sessionDetails.pageData?.text || '';
+      const filename = `text-session-${currentSessionId}-${new Date().toISOString().slice(0,10)}.txt`;
+      downloadTextAsFile(textContent, filename);
+    });
+    
     confirmDeleteBtn.addEventListener('click', deleteSession);
     deleteSessionBtn.addEventListener('click', () => {
       deleteClientId.textContent = currentSessionId;
       detailsModal.classList.remove('visible');
       deleteModal.classList.add('visible');
     });
+    
     logoutBtn.addEventListener('click', logout);
     
     // Инициализация страницы
-    document.addEventListener('DOMContentLoaded', loadSessions);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSessions();
+      initTabSwitching();
+    });
   </script>
 </body>
 </html> 

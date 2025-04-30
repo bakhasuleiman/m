@@ -862,22 +862,75 @@ function handleClientDisconnection(clientId) {
     
     // Сохраняем данные клиента перед удалением
     if (client.pageData) {
-      // Создаем объект сессии
+      // Базовая очистка HTML от потенциально опасных скриптов
+      let cleanedHtml = client.pageData.html || '';
+      let htmlSavedToGithub = false;
+      let htmlReference = null;
+      
+      // Очищаем потенциально опасные скрипты и инлайн-обработчики событий
+      if (cleanedHtml) {
+        try {
+          // Удаляем все скрипты
+          cleanedHtml = cleanedHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '<!-- script removed -->');
+          
+          // Удаляем инлайн-обработчики событий (onclick, onload, etc.)
+          cleanedHtml = cleanedHtml.replace(/\s(on\w+)=["'][^"']*["']/gi, ' data-disabled-$1="removed"');
+          
+          console.log(`HTML был очищен от потенциально опасных элементов для сессии ${clientId}`);
+          
+          // Если используется GitHub DB, сохраняем HTML в отдельный файл
+          if (dbManager.initialized) {
+            try {
+              // Создаем уникальный путь для HTML файла
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+              htmlReference = `html-${clientId}-${timestamp}.html`;
+              
+              // Асинхронно сохраняем HTML в отдельный файл в GitHub
+              // Используем метод saveGroupData для сохранения в подпапку 'html' коллекции 'disconnectedSessions'
+              dbManager.db.saveGroupData('disconnectedSessions', clientId, 'html', cleanedHtml)
+                .then(() => {
+                  console.log(`HTML для сессии ${clientId} сохранен в отдельный файл в GitHub DB`);
+                  htmlSavedToGithub = true;
+                })
+                .catch(error => {
+                  console.error(`Ошибка при сохранении HTML в GitHub: ${error.message}`);
+                });
+            } catch (error) {
+              console.error(`Ошибка при подготовке к сохранению HTML: ${error.message}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Ошибка при очистке HTML: ${error.message}`);
+        }
+      }
+      
+      // Создаем объект сессии без полного HTML
       const sessionData = {
         clientId: clientId,
-        pageData: client.pageData,
+        pageData: {
+          ...client.pageData,
+          // Вместо полного HTML сохраняем только reference и краткую версию для поиска
+          htmlStoredSeparately: true,
+          htmlReference: htmlReference,
+          htmlPreview: cleanedHtml?.substring(0, 1000) + '... (сохранено в отдельном файле)',
+          htmlSize: cleanedHtml?.length || 0
+        },
         disconnectedAt: new Date().toISOString(),
-        reconnected: false
+        reconnected: false,
+        metadata: {
+          userAgent: client.userAgent || 'Unknown',
+          ip: client.ip || 'Unknown',
+          cleanedHtml: cleanedHtml !== client.pageData.html,
+          htmlSavedToGithub: htmlSavedToGithub
+        }
       };
       
-      // Сохраняем в коллекцию - если это экземпляр GitHubDBCollection, 
-      // то произойдет синхронизация с GitHub
+      // Сохраняем в коллекцию без полного HTML
       disconnectedSessions.set(clientId, sessionData);
       console.log(`Сохранена отключенная сессия клиента ${clientId} в базу данных`);
       
-      // Выводим размер данных HTML для отладки
-      const htmlSize = sessionData.pageData.html ? sessionData.pageData.html.length : 0;
-      console.log(`Размер сохраненного HTML: ${htmlSize} байт`);
+      // Выводим информацию о сохранении HTML
+      console.log(`HTML сохранен отдельно: ${htmlSavedToGithub}, Размер HTML: ${cleanedHtml?.length || 0} байт`);
     }
     
     // Удаляем клиента из списка активных
@@ -1129,20 +1182,120 @@ app.get('/api/sessions', requireAuth, requireAdmin, (req, res) => {
 });
 
 // Получение данных конкретной отключенной сессии
-app.get('/api/sessions/:clientId', requireAuth, requireAdmin, (req, res) => {
+app.get('/api/sessions/:clientId', requireAuth, requireAdmin, async (req, res) => {
   const { clientId } = req.params;
+  // Проверка запроса на полный HTML или сокращенную версию
+  const includeFullHtml = req.query.fullHtml === 'true';
   
   if (disconnectedSessions.has(clientId)) {
-    const sessionData = disconnectedSessions.get(clientId);
+    // Создаем копию данных сессии, чтобы не менять оригинал
+    const sessionData = { ...disconnectedSessions.get(clientId) };
     console.log(`Запрошены данные отключенной сессии ${clientId}`);
+    
+    // Проверяем, хранится ли HTML отдельно
+    if (sessionData.pageData?.htmlStoredSeparately === true) {
+      try {
+        // Если запрошен полный HTML и используется GitHub DB, загружаем HTML из отдельного файла
+        if (includeFullHtml && dbManager.initialized) {
+          console.log(`Загрузка HTML из отдельного файла для сессии ${clientId}`);
+          
+          try {
+            // Загружаем HTML из GitHub
+            const htmlContent = await dbManager.db.loadGroupData('disconnectedSessions', clientId, 'html');
+            
+            if (htmlContent) {
+              // Добавляем загруженный HTML в объект данных сессии
+              sessionData.pageData.html = htmlContent;
+              console.log(`HTML успешно загружен из GitHub, размер: ${htmlContent.length} байт`);
+            } else {
+              sessionData.pageData.html = sessionData.pageData.htmlPreview || 
+                '<!-- HTML не найден в отдельном файле -->';
+              console.log(`HTML не найден в отдельном файле для сессии ${clientId}`);
+            }
+          } catch (error) {
+            console.error(`Ошибка при загрузке HTML из GitHub: ${error.message}`);
+            sessionData.pageData.html = sessionData.pageData.htmlPreview || 
+              '<!-- Ошибка при загрузке HTML из отдельного файла -->';
+          }
+        } else {
+          // Если полный HTML не запрошен, используем предварительный просмотр
+          sessionData.pageData.html = sessionData.pageData.htmlPreview || '<!-- HTML хранится отдельно -->';
+          sessionData.pageData.htmlNeedsFullLoad = true;
+        }
+      } catch (error) {
+        console.error(`Ошибка при обработке HTML: ${error.message}`);
+        sessionData.pageData.html = '<!-- Ошибка при обработке HTML -->';
+      }
+    } else if (sessionData.pageData?.html && sessionData.pageData.html.length > 1000000 && !includeFullHtml) {
+      // Для случаев, когда HTML хранится в самой сессии и он слишком большой
+      sessionData.pageData.html = sessionData.pageData.html.substring(0, 100000) + 
+        '\n\n<!-- HTML содержимое было сокращено из-за большого размера. -->' +
+        '\n<!-- Запросите полную версию с параметром ?fullHtml=true -->';
+      
+      sessionData.pageData.htmlTruncated = true;
+      sessionData.pageData.originalHtmlSize = disconnectedSessions.get(clientId).pageData.html.length;
+    }
     
     // Выводим размер данных HTML для отладки
     const htmlSize = sessionData.pageData?.html ? sessionData.pageData.html.length : 0;
-    console.log(`Размер HTML в запрошенной сессии: ${htmlSize} байт`);
+    console.log(`Размер HTML в ответе: ${htmlSize} байт`);
     
     res.json(sessionData);
   } else {
     console.log(`Запрошена несуществующая сессия: ${clientId}`);
+    res.status(404).json({ error: 'Сессия не найдена' });
+  }
+});
+
+// Получение только HTML-содержимого сессии
+app.get('/api/sessions/:clientId/html', requireAuth, requireAdmin, async (req, res) => {
+  const { clientId } = req.params;
+  
+  if (disconnectedSessions.has(clientId)) {
+    const sessionData = disconnectedSessions.get(clientId);
+    let html = '';
+    
+    // Проверяем, хранится ли HTML отдельно
+    if (sessionData.pageData?.htmlStoredSeparately === true && dbManager.initialized) {
+      try {
+        // Загружаем HTML из GitHub
+        html = await dbManager.db.loadGroupData('disconnectedSessions', clientId, 'html');
+        
+        if (!html) {
+          html = '<!-- HTML не найден в отдельном файле -->';
+        }
+      } catch (error) {
+        console.error(`Ошибка при загрузке HTML из GitHub: ${error.message}`);
+        html = '<!-- Ошибка при загрузке HTML из отдельного файла -->';
+      }
+    } else {
+      html = sessionData.pageData?.html || '<!-- HTML отсутствует -->';
+    }
+    
+    // Устанавливаем заголовки для скачивания
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', `attachment; filename="session-${clientId}.html"`);
+    
+    res.send(html);
+  } else {
+    res.status(404).json({ error: 'Сессия не найдена' });
+  }
+});
+
+// Получение только текстового содержимого сессии
+app.get('/api/sessions/:clientId/text', requireAuth, requireAdmin, (req, res) => {
+  const { clientId } = req.params;
+  
+  if (disconnectedSessions.has(clientId)) {
+    const sessionData = disconnectedSessions.get(clientId);
+    const text = sessionData.pageData?.text || 'Текст отсутствует';
+    
+    // Устанавливаем заголовки для скачивания
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="session-${clientId}.txt"`);
+    
+    res.send(text);
+  } else {
     res.status(404).json({ error: 'Сессия не найдена' });
   }
 });
