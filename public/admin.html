@@ -764,6 +764,140 @@
         width: 100%;
       }
     }
+
+    /* Стили для модального окна выполнения HTML */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      overflow: auto;
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 0;
+      width: 90%;
+      max-width: 1400px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      height: 85%;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--primary-color);
+    }
+
+    .close-modal {
+      color: var(--text-light);
+      font-size: 1.5rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .close-modal:hover {
+      color: var(--primary-color);
+    }
+
+    .modal-body {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .modal-toolbar {
+      padding: 10px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: 10px;
+    }
+
+    .html-run-container {
+      flex-grow: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .editor-preview-container {
+      display: flex;
+      height: 100%;
+    }
+
+    .html-editor-container {
+      width: 50%;
+      height: 100%;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    #html-editor {
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 15px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      background-color: #f8f8f8;
+      color: var(--text-color);
+    }
+
+    .html-preview-wrapper {
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #html-run-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: white;
+    }
+
+    .fullscreen-modal .modal-content {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      border-radius: 0;
+    }
+
+    .editor-hidden .html-editor-container {
+      display: none;
+    }
+
+    .editor-hidden .html-preview-wrapper {
+      width: 100%;
+    }
+
+    .btn-success {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
@@ -831,6 +965,7 @@
               <button id="copy-html-btn" class="btn btn-sm btn-primary">Копировать HTML</button>
               <button id="format-html-btn" class="btn btn-sm btn-secondary">Форматировать</button>
               <button id="download-html-btn" class="btn btn-sm btn-info">Скачать HTML</button>
+              <button id="run-html-btn" class="btn btn-sm btn-success">Запустить HTML</button>
               <div class="search-container">
                 <input type="text" id="html-search" placeholder="Поиск в HTML" class="form-control form-control-sm">
                 <span id="search-result-count">0/0</span>
@@ -909,6 +1044,33 @@
       </div>
     </div>
   </main>
+  
+  <div id="html-run-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Редактирование и запуск HTML</h3>
+        <span class="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="modal-toolbar">
+          <button id="modal-apply-changes" class="btn btn-sm btn-success">Применить изменения</button>
+          <button id="modal-toggle-fullscreen" class="btn btn-sm btn-secondary">На весь экран</button>
+          <button id="modal-open-new-window" class="btn btn-sm btn-primary">Открыть в новом окне</button>
+          <button id="modal-toggle-editor" class="btn btn-sm btn-info">Показать/скрыть редактор</button>
+        </div>
+        <div class="html-run-container">
+          <div class="editor-preview-container">
+            <div class="html-editor-container">
+              <textarea id="html-editor" spellcheck="false"></textarea>
+            </div>
+            <div class="html-preview-wrapper">
+              <iframe id="html-run-iframe" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <script>
     // Глобальные переменные для WebSocket соединения и состояния приложения
@@ -2086,6 +2248,7 @@
       const copyHtmlBtn = document.getElementById('copy-html-btn');
       const formatHtmlBtn = document.getElementById('format-html-btn');
       const downloadHtmlBtn = document.getElementById('download-html-btn');
+      const runHtmlBtn = document.getElementById('run-html-btn');
       const htmlSearch = document.getElementById('html-search');
       const searchPrevBtn = document.getElementById('search-prev-btn');
       const searchNextBtn = document.getElementById('search-next-btn');
@@ -2127,6 +2290,11 @@
         a.download = `page-${new Date().toISOString().replace(/[:.]/g, '-')}.html`;
         a.click();
         URL.revokeObjectURL(url);
+      });
+      
+      // Запуск HTML кода
+      runHtmlBtn.addEventListener('click', function() {
+        runHtmlCode(html);
       });
       
       // Поиск в HTML
@@ -2268,6 +2436,75 @@
       
       // Удаляем лишние переводы строк
       return formatted.trim().replace(/\n\s*\n/g, '\n');
+    }
+
+    // Функция для запуска HTML кода
+    function runHtmlCode(html) {
+      // Получаем модальное окно и элементы
+      const modal = document.getElementById('html-run-modal');
+      const iframe = document.getElementById('html-run-iframe');
+      const closeModal = document.querySelector('.close-modal');
+      const toggleFullscreen = document.getElementById('modal-toggle-fullscreen');
+      const openNewWindow = document.getElementById('modal-open-new-window');
+      const htmlEditor = document.getElementById('html-editor');
+      const applyChanges = document.getElementById('modal-apply-changes');
+      const toggleEditor = document.getElementById('modal-toggle-editor');
+      const editorPreviewContainer = document.querySelector('.editor-preview-container');
+      
+      // Устанавливаем HTML в редактор
+      htmlEditor.value = html;
+      
+      // Установка содержимого iframe
+      iframe.srcdoc = html;
+      
+      // Отображаем модальное окно
+      modal.style.display = 'block';
+      
+      // Обработчик для закрытия модального окна
+      closeModal.onclick = function() {
+        modal.style.display = 'none';
+      };
+      
+      // Закрытие при клике вне модального окна
+      window.onclick = function(event) {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      };
+      
+      // Переключение полноэкранного режима
+      toggleFullscreen.onclick = function() {
+        modal.classList.toggle('fullscreen-modal');
+        toggleFullscreen.textContent = modal.classList.contains('fullscreen-modal') 
+          ? 'Выйти из полноэкранного режима' 
+          : 'На весь экран';
+      };
+      
+      // Применение изменений из редактора
+      applyChanges.onclick = function() {
+        const editedHtml = htmlEditor.value;
+        iframe.srcdoc = editedHtml;
+      };
+      
+      // Переключение видимости редактора
+      toggleEditor.onclick = function() {
+        editorPreviewContainer.classList.toggle('editor-hidden');
+      };
+      
+      // Открытие в новом окне
+      openNewWindow.onclick = function() {
+        // Открываем текущий отредактированный код
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(htmlEditor.value);
+        newWindow.document.close();
+      };
+      
+      // Обработка горячих клавиш в редакторе (Ctrl+Enter для применения изменений)
+      htmlEditor.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+          applyChanges.click();
+        }
+      });
     }
   </script>
   
