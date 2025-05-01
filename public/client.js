@@ -516,7 +516,7 @@
       display: 'flex',
       flexDirection: 'column',
       fontFamily: 'Arial, sans-serif',
-      cursor: 'move' // Курсор, показывающий, что элемент можно перетаскивать
+      cursor: 'default' // Курсор, показывающий, что элемент можно перетаскивать
     });
     
     // Создаем контейнер для сообщений
