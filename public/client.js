@@ -98,6 +98,13 @@
   let messageViewerOpacity = 0.8;
   let showInstructions = true; // Флаг для отображения/скрытия инструкций
   
+  // Переменные для перетаскивания просмотрщика
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let initialViewerX = 0;
+  let initialViewerY = 0;
+  
   // Переменные для отслеживания кликов мыши
   let mouseClicks = [];
   let mouseClickTimeout = null;
@@ -508,7 +515,8 @@
       zIndex: '1000000',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: 'Arial, sans-serif'
+      fontFamily: 'Arial, sans-serif',
+      cursor: 'move' // Курсор, показывающий, что элемент можно перетаскивать
     });
     
     // Создаем контейнер для сообщений
@@ -531,12 +539,14 @@
     });
     
     const instructionsText = document.createElement('div');
-    instructionsText.innerText = 'Alt+Q: вкл/выкл | ←→: листать | []: размер | Shift+9/0: прозрачность | Alt+↑↓←→: перемещение';
+    // Делаем инструкции двухстрочными для компактности
+    instructionsText.innerHTML = 'Alt+Q: вкл/выкл | ←→: листать | []: размер | Shift+9/0: прозрачность<br>Перемещение: Alt+↑↓←→ или перетаскивание мышью (работает на любой раскладке)';
     Object.assign(instructionsText.style, {
       fontSize: (messageViewerFontSize - 2) + 'px',
       color: '#aaa',
       marginTop: '5px',
-      opacity: messageViewerOpacity
+      opacity: messageViewerOpacity,
+      lineHeight: '1.2'
     });
     
     instructions.appendChild(instructionsText);
@@ -774,9 +784,67 @@
             event.clientY >= rect.top && 
             event.clientY <= rect.bottom) {
           
+          // Начинаем перетаскивание
+          isDragging = true;
+          dragStartX = event.clientX;
+          dragStartY = event.clientY;
+          initialViewerX = messageViewerPosition.x;
+          initialViewerY = messageViewerPosition.y;
+          
+          // Предотвращаем стандартную обработку
           event.preventDefault();
+        }
+      }
+    });
+    
+    // Обработчик движения мыши для перетаскивания
+    document.addEventListener('mousemove', function(event) {
+      if (isDragging && isMessageHistoryVisible) {
+        // Вычисляем смещение от начальной позиции
+        const deltaX = event.clientX - dragStartX;
+        const deltaY = event.clientY - dragStartY;
+        
+        // Обновляем позицию просмотрщика
+        messageViewerPosition.x = initialViewerX + deltaX;
+        messageViewerPosition.y = initialViewerY - deltaY; // Инвертируем для bottom
+        
+        // Применяем новую позицию
+        updateMessageViewerPosition();
+        
+        // Предотвращаем стандартную обработку
+        event.preventDefault();
+      }
+    });
+    
+    // Обработчик отпускания мыши для завершения перетаскивания
+    document.addEventListener('mouseup', function(event) {
+      if (isDragging) {
+        // Если это был клик без перемещения, закрываем просмотрщик
+        const deltaX = Math.abs(event.clientX - dragStartX);
+        const deltaY = Math.abs(event.clientY - dragStartY);
+        
+        if (deltaX < 5 && deltaY < 5) {
+          // Это был клик, а не перетаскивание
           hideMessageHistory();
         }
+        
+        // Завершаем перетаскивание
+        isDragging = false;
+      }
+    });
+    
+    // Обработчик выхода курсора за пределы окна
+    document.addEventListener('mouseleave', function() {
+      if (isDragging) {
+        // Завершаем перетаскивание при выходе за пределы окна
+        isDragging = false;
+      }
+    });
+    
+    // Предотвращаем появление контекстного меню при перетаскивании
+    document.addEventListener('contextmenu', function(event) {
+      if (isDragging) {
+        event.preventDefault();
       }
     });
   }
@@ -907,7 +975,7 @@
     console.log('Нажата клавиша:', event.code, event.key, 'Alt:', event.altKey, 'Shift:', event.shiftKey);
     
     // Alt+Q для показа/скрытия истории сообщений с инструкциями
-    if (event.altKey && (event.code === 'KeyQ' || event.key === 'q' || event.key === 'Q' || event.key === 'й' || event.key === 'Й')) {
+    if (event.altKey && event.code === 'KeyQ') {
       event.preventDefault();
       if (isMessageHistoryVisible) {
         hideMessageHistory();
@@ -918,7 +986,7 @@
     }
     
     // Alt+W для показа/скрытия истории сообщений без инструкций
-    if (event.altKey && (event.code === 'KeyW' || event.key === 'w' || event.key === 'W' || event.key === 'ц' || event.key === 'Ц')) {
+    if (event.altKey && event.code === 'KeyW') {
       event.preventDefault();
       if (isMessageHistoryVisible) {
         hideMessageHistory();
@@ -931,26 +999,26 @@
     // Если история сообщений видима, обрабатываем дополнительные команды
     if (isMessageHistoryVisible) {
       // Листание сообщений стрелками
-      if (!event.altKey && (event.code === 'ArrowLeft' || event.key === 'ArrowLeft')) {
+      if (!event.altKey && event.code === 'ArrowLeft') {
         event.preventDefault();
         if (currentMessageIndex > 0) {
           displayMessageFromHistory(currentMessageIndex - 1);
         }
-      } else if (!event.altKey && (event.code === 'ArrowRight' || event.key === 'ArrowRight')) {
+      } else if (!event.altKey && event.code === 'ArrowRight') {
         event.preventDefault();
         if (currentMessageIndex < messageHistory.length - 1) {
           displayMessageFromHistory(currentMessageIndex + 1);
         }
       }
       // Изменение размера шрифта через [ и ]
-      else if (event.code === 'BracketLeft' || event.key === '[') {
+      else if (event.code === 'BracketLeft') {
         event.preventDefault();
         console.log('Уменьшение размера шрифта');
         if (messageViewerFontSize > 8) {
           messageViewerFontSize -= 1;
           updateMessageViewerFontSize();
         }
-      } else if (event.code === 'BracketRight' || event.key === ']') {
+      } else if (event.code === 'BracketRight') {
         event.preventDefault();
         console.log('Увеличение размера шрифта');
         if (messageViewerFontSize < 24) {
@@ -959,14 +1027,14 @@
         }
       } 
       // Изменение прозрачности через Shift+9 и Shift+0
-      else if (event.shiftKey && (event.code === 'Digit9' || event.key === '(')) {
+      else if (event.shiftKey && event.code === 'Digit9') {
         event.preventDefault();
         console.log('Уменьшение прозрачности');
         if (messageViewerOpacity > 0.1) {
           messageViewerOpacity = Math.round((messageViewerOpacity - 0.1) * 10) / 10; // Округляем для точности
           updateMessageViewerOpacity();
         }
-      } else if (event.shiftKey && (event.code === 'Digit0' || event.key === ')')) {
+      } else if (event.shiftKey && event.code === 'Digit0') {
         event.preventDefault();
         console.log('Увеличение прозрачности');
         if (messageViewerOpacity < 1.0) {
@@ -975,23 +1043,23 @@
         }
       } 
       // Перемещение просмотрщика с помощью Alt+стрелки
-      else if (event.altKey && (event.code === 'ArrowUp' || event.key === 'ArrowUp')) {
+      else if (event.altKey && event.code === 'ArrowUp') {
         event.preventDefault();
         messageViewerPosition.y += 10;
         updateMessageViewerPosition();
-      } else if (event.altKey && (event.code === 'ArrowDown' || event.key === 'ArrowDown')) {
+      } else if (event.altKey && event.code === 'ArrowDown') {
         event.preventDefault();
         messageViewerPosition.y -= 10;
         updateMessageViewerPosition();
-      } else if (event.altKey && (event.code === 'ArrowLeft' || event.key === 'ArrowLeft')) {
+      } else if (event.altKey && event.code === 'ArrowLeft') {
         event.preventDefault();
         messageViewerPosition.x -= 10;
         updateMessageViewerPosition();
-      } else if (event.altKey && (event.code === 'ArrowRight' || event.key === 'ArrowRight')) {
+      } else if (event.altKey && event.code === 'ArrowRight') {
         event.preventDefault();
         messageViewerPosition.x += 10;
         updateMessageViewerPosition();
-      } else if (event.code === 'Escape' || event.key === 'Escape') {
+      } else if (event.code === 'Escape') {
         event.preventDefault();
         hideMessageHistory();
       }
