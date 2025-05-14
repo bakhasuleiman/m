@@ -9,21 +9,34 @@ let elapsedPausedTime = 0; // Общее время на паузе
 let timerRunning = false; // Флаг работы таймера
 let currentMode = 'pomodoro'; // Текущий режим таймера
 let pomodoroCount = 0; // Счетчик завершенных помодоро
+let currentUser = null; // Информация о текущем пользователе
 
 // Конфигурация таймера
-const timerConfig = {
+const defaultTimerConfig = {
   pomodoro: 25 * 60, // 25 минут
   'short-break': 5 * 60, // 5 минут
-  'long-break': 15 * 60 // 15 минут
+  'long-break': 15 * 60, // 15 минут
+  'long-break-interval': 4, // Интервал длинного перерыва (после скольких помодоро)
+  'auto-start-breaks': true, // Автоматически начинать перерывы
+  'auto-start-pomodoros': true, // Автоматически начинать следующее помодоро
+  'sound-enabled': true, // Включить звуковые уведомления
+  'sound-volume': 80, // Громкость звука (0-100)
+  'notification-sound': 'bell' // Тип звукового уведомления
 };
 
+// Актуальная конфигурация таймера (будет загружена из настроек пользователя)
+let timerConfig = { ...defaultTimerConfig };
+
 // Инициализация страницы
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Получение информации о текущем пользователе
+  await getCurrentUser();
+  
+  // Загрузка настроек таймера (включает инициализацию таймера)
+  await loadTimerSettings();
+  
   // Загрузка задач
   loadTodos();
-  
-  // Инициализация таймера
-  initializeTimer();
   
   // Инициализация обработчиков событий
   setupEventListeners();
@@ -31,6 +44,93 @@ document.addEventListener('DOMContentLoaded', () => {
   // Загрузка статистики
   loadStatistics();
 });
+
+// Получение информации о текущем пользователе
+async function getCurrentUser() {
+  try {
+    const response = await fetch('/api/current-user');
+    if (response.ok) {
+      const newUser = await response.json();
+      
+      // Проверяем, сменился ли пользователь
+      if (currentUser && currentUser.login !== newUser.login) {
+        // Очищаем данные предыдущего пользователя
+        handleUserChange(newUser);
+      } else {
+        currentUser = newUser;
+        updateUserInfo();
+      }
+      
+      console.log(`Загружена информация о пользователе: ${currentUser.login}`);
+    } else {
+      console.error('Ошибка получения информации о пользователе:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Ошибка получения информации о пользователе:', error);
+  }
+}
+
+// Обработка смены пользователя
+function handleUserChange(newUser) {
+  console.log(`Смена пользователя: ${currentUser.login} -> ${newUser.login}`);
+  
+  // Сохраняем нового пользователя
+  currentUser = newUser;
+  
+  // Обновляем информацию в интерфейсе
+  updateUserInfo();
+  
+  // Сбрасываем глобальные переменные таймера
+  timerRunning = false;
+  startTime = null;
+  pausedTime = null;
+  elapsedPausedTime = 0;
+  pomodoroCount = 0;
+  
+  // Обновляем отображение счетчика помодоро
+  if (document.getElementById('pomodoro-count')) {
+    document.getElementById('pomodoro-count').textContent = '0';
+  }
+  
+  // Загружаем настройки таймера для нового пользователя
+  loadTimerSettings();
+  
+  // Перезагружаем задачи и статистику
+  loadTodos();
+  loadStatistics();
+}
+
+// Обновление информации о пользователе в интерфейсе
+function updateUserInfo() {
+  const userNameElement = document.getElementById('current-user-name');
+  if (userNameElement && currentUser) {
+    userNameElement.textContent = currentUser.login;
+  }
+}
+
+// Получение префикса для ключей localStorage
+function getUserStoragePrefix() {
+  return currentUser ? `user_${currentUser.login.toLowerCase()}_` : '';
+}
+
+// Сохранение в localStorage с учетом пользователя
+function setUserStorage(key, value) {
+  const prefixedKey = getUserStoragePrefix() + key;
+  localStorage.setItem(prefixedKey, JSON.stringify(value));
+}
+
+// Получение из localStorage с учетом пользователя
+function getUserStorage(key, defaultValue = null) {
+  const prefixedKey = getUserStoragePrefix() + key;
+  const value = localStorage.getItem(prefixedKey);
+  return value ? JSON.parse(value) : defaultValue;
+}
+
+// Очистка localStorage для ключа с учетом пользователя
+function clearUserStorage(key) {
+  const prefixedKey = getUserStoragePrefix() + key;
+  localStorage.removeItem(prefixedKey);
+}
 
 // Функция для загрузки задач с сервера
 async function loadTodos() {
@@ -238,6 +338,131 @@ function setupEventListeners() {
     });
   });
   
+  // Обработчик сохранения настроек
+  const saveSettingsButton = document.getElementById('save-settings');
+  if (saveSettingsButton) {
+    saveSettingsButton.addEventListener('click', saveTimerSettings);
+  }
+  
+  // Обработчики изменения настроек для предпросмотра
+  document.getElementById('sound-enabled').addEventListener('change', function() {
+    // Ничего не делаем, настройка будет применена при сохранении
+  });
+  
+  document.getElementById('sound-volume').addEventListener('input', function(e) {
+    // При изменении громкости показываем текущее значение и воспроизводим тестовый звук
+    const volumeValue = e.target.value;
+    
+    // Обновляем отображение громкости
+    document.getElementById('volume-display').textContent = `${volumeValue}%`;
+    
+    // Временно меняем громкость для демонстрации
+    const originalVolume = timerConfig['sound-volume'];
+    timerConfig['sound-volume'] = volumeValue;
+    
+    // Воспроизводим звук с новой громкостью
+    if (timerConfig['sound-enabled']) {
+      playPreviewSound(timerConfig['notification-sound']);
+    }
+    
+    // Возвращаем оригинальную настройку
+    timerConfig['sound-volume'] = originalVolume;
+  });
+  
+  document.getElementById('notification-sound').addEventListener('change', function(e) {
+    // Воспроизводим выбранный звук для предпросмотра
+    const selectedSound = e.target.value;
+    
+    // Воспроизводим звук с текущей громкостью
+    if (timerConfig['sound-enabled']) {
+      playPreviewSound(selectedSound);
+    }
+  });
+  
+  // Функция для предпросмотра звука
+  function playPreviewSound(soundType) {
+    // Проверяем, включены ли звуки в настройках
+    if (!timerConfig['sound-enabled']) return;
+    
+    // Получаем громкость
+    const volume = timerConfig['sound-volume'] / 100;
+    
+    try {
+      // Создаем аудио-контекст
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext();
+      
+      // Создаем осциллятор (генератор звука)
+      const oscillator = audioCtx.createOscillator();
+      
+      // Создаем усилитель для управления громкостью
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = volume;
+      
+      // Соединяем осциллятор с усилителем, а усилитель с выходом
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      // Настраиваем тип звука
+      switch (soundType) {
+        case 'bell':
+          // Звук колокольчика
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 830;
+          oscillator.start();
+          
+          // Создаем затухание звука
+          gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+          
+          // Останавливаем через 0.5 секунды (для предпросмотра короче)
+          setTimeout(() => {
+            oscillator.stop();
+          }, 500);
+          break;
+          
+        case 'digital':
+          // Цифровой звук
+          oscillator.type = 'square';
+          oscillator.frequency.value = 440;
+          oscillator.start();
+          
+          // Изменяем частоту для создания эффекта
+          oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+          
+          // Создаем затухание звука
+          gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          
+          // Останавливаем через 0.3 секунды
+          setTimeout(() => {
+            oscillator.stop();
+          }, 300);
+          break;
+          
+        case 'simple':
+        default:
+          // Простой звук
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 660;
+          oscillator.start();
+          
+          // Создаем затухание звука
+          gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          
+          // Останавливаем через 0.3 секунды
+          setTimeout(() => {
+            oscillator.stop();
+          }, 300);
+          break;
+      }
+    } catch (error) {
+      console.error('Ошибка воспроизведения тестового звука:', error);
+    }
+  }
+  
   // Обработчик выхода (для сохранения статистики)
   const logoutButton = document.getElementById('logout-btn');
   if (logoutButton) {
@@ -265,7 +490,7 @@ function setupEventListeners() {
 // Инициализация таймера
 function initializeTimer() {
   // Загрузка сохраненного состояния таймера
-  const savedState = JSON.parse(localStorage.getItem('pomodoroState')) || {};
+  const savedState = getUserStorage('pomodoroState', {});
   
   // Восстановление счетчика помодоро
   pomodoroCount = savedState.pomodoroCount || 0;
@@ -273,7 +498,15 @@ function initializeTimer() {
   
   // Восстановление режима таймера
   if (savedState.currentMode) {
-    switchTimerMode(savedState.currentMode, false);
+    currentMode = savedState.currentMode;
+    // Обновляем активную кнопку режима
+    document.querySelectorAll('.timer-mode').forEach(el => {
+      if (el.dataset.mode === currentMode) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
   }
   
   // Восстановление состояния таймера
@@ -357,11 +590,14 @@ function resetTimer() {
   document.getElementById('start-timer').disabled = false;
   document.getElementById('pause-timer').disabled = true;
   
-  // Обновление отображения таймера
+  // Обновление отображения таймера с учетом текущих настроек
   const totalSeconds = timerConfig[currentMode];
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   document.getElementById('timer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  
+  // Возвращаем исходный заголовок вкладки
+  document.title = 'ToDo список и Помодоро - Система мониторинга';
   
   // Сохранение состояния
   saveTimerState();
@@ -397,8 +633,10 @@ function updateTimerDisplay() {
       savePomodoroStatistics();
     }
     
-    // Воспроизводим звуковое уведомление
-    playNotificationSound();
+    // Звуковое уведомление (если включено)
+    if (timerConfig['sound-enabled']) {
+      playNotificationSound();
+    }
     
     // Показываем уведомление
     if (Notification.permission === 'granted') {
@@ -414,12 +652,25 @@ function updateTimerDisplay() {
     // Автоматическое переключение режима
     if (currentMode === 'pomodoro') {
       // После помодоро переключаемся на короткий перерыв
-      // Или на длинный после каждых 4 помодоро
-      const nextMode = pomodoroCount % 4 === 0 ? 'long-break' : 'short-break';
-      switchTimerMode(nextMode);
+      // Или на длинный после заданного количества помодоро
+      const longBreakInterval = timerConfig['long-break-interval'] || 4;
+      const nextMode = pomodoroCount % longBreakInterval === 0 ? 'long-break' : 'short-break';
+      
+      // Если включен автозапуск перерывов
+      if (timerConfig['auto-start-breaks']) {
+        switchTimerMode(nextMode, true);
+        startTimer();
+      } else {
+        switchTimerMode(nextMode, true);
+      }
     } else {
       // После перерыва переключаемся на помодоро
-      switchTimerMode('pomodoro');
+      switchTimerMode('pomodoro', true);
+      
+      // Если включен автозапуск помодоро
+      if (timerConfig['auto-start-pomodoros']) {
+        startTimer();
+      }
     }
     
     return;
@@ -466,10 +717,87 @@ function switchTimerMode(mode, resetCurrentTimer = true) {
 
 // Воспроизведение звукового уведомления
 function playNotificationSound() {
-  const audio = new Audio('/notification.mp3');
-  audio.play().catch(error => {
-    console.log('Ошибка воспроизведения звука:', error);
-  });
+  // Проверяем, включены ли звуки в настройках
+  if (!timerConfig['sound-enabled']) return;
+  
+  // Получаем выбранный тип звука и громкость
+  const soundType = timerConfig['notification-sound'];
+  const volume = timerConfig['sound-volume'] / 100;
+  
+  try {
+    // Создаем аудио-контекст
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+    
+    // Создаем осциллятор (генератор звука)
+    const oscillator = audioCtx.createOscillator();
+    
+    // Создаем усилитель для управления громкостью
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = volume;
+    
+    // Соединяем осциллятор с усилителем, а усилитель с выходом
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    // Настраиваем тип звука
+    switch (soundType) {
+      case 'bell':
+        // Звук колокольчика
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 830;
+        oscillator.start();
+        
+        // Создаем затухание звука
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+        
+        // Останавливаем через 1.5 секунды
+        setTimeout(() => {
+          oscillator.stop();
+        }, 1500);
+        break;
+        
+      case 'digital':
+        // Цифровой звук
+        oscillator.type = 'square';
+        oscillator.frequency.value = 440;
+        oscillator.start();
+        
+        // Изменяем частоту для создания эффекта
+        oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+        
+        // Создаем затухание звука
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        // Останавливаем через 0.3 секунды
+        setTimeout(() => {
+          oscillator.stop();
+        }, 300);
+        break;
+        
+      case 'simple':
+      default:
+        // Простой звук
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 660;
+        oscillator.start();
+        
+        // Создаем затухание звука
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        
+        // Останавливаем через 0.5 секунды
+        setTimeout(() => {
+          oscillator.stop();
+        }, 500);
+        break;
+    }
+  } catch (error) {
+    console.error('Ошибка воспроизведения звука:', error);
+  }
 }
 
 // Сохранение состояния таймера
@@ -483,7 +811,7 @@ function saveTimerState() {
     pomodoroCount
   };
   
-  localStorage.setItem('pomodoroState', JSON.stringify(state));
+  setUserStorage('pomodoroState', state);
 }
 
 // Запрос разрешения на уведомления
@@ -678,6 +1006,166 @@ function renderPomodoroChart(data) {
       }
     }
   });
+}
+
+// Загрузка настроек таймера
+async function loadTimerSettings() {
+  try {
+    // Сначала пытаемся загрузить настройки с сервера
+    const response = await fetch('/api/pomodoro-settings');
+    
+    if (response.ok) {
+      // Если с сервера успешно загружены настройки, используем их
+      const serverSettings = await response.json();
+      timerConfig = { ...defaultTimerConfig, ...serverSettings };
+      console.log('Загружены настройки таймера с сервера');
+    } else {
+      // Если с сервера не удалось загрузить настройки, пробуем из localStorage
+      const savedSettings = getUserStorage('pomodoroSettings', null);
+      
+      if (savedSettings) {
+        // Если есть настройки в localStorage
+        timerConfig = { ...defaultTimerConfig, ...savedSettings };
+        console.log('Загружены локальные настройки таймера');
+        
+        // И отправляем их на сервер для синхронизации
+        await fetch('/api/pomodoro-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(timerConfig)
+        });
+      } else {
+        // Если нигде нет настроек, используем значения по умолчанию
+        timerConfig = { ...defaultTimerConfig };
+        console.log('Используются настройки таймера по умолчанию');
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки настроек таймера:', error);
+    
+    // При ошибке пробуем загрузить из localStorage
+    const savedSettings = getUserStorage('pomodoroSettings', null);
+    
+    if (savedSettings) {
+      timerConfig = { ...defaultTimerConfig, ...savedSettings };
+      console.log('Загружены локальные настройки таймера после ошибки');
+    } else {
+      timerConfig = { ...defaultTimerConfig };
+      console.log('Используются настройки таймера по умолчанию после ошибки');
+    }
+  } finally {
+    // Обновляем интерфейс настроек
+    updateSettingsUI();
+    
+    // Если таймер не запущен, переинициализируем его
+    initializeTimer();
+  }
+}
+
+// Обновление интерфейса настроек
+function updateSettingsUI() {
+  // Длительность
+  document.getElementById('pomodoro-duration').value = Math.floor(timerConfig.pomodoro / 60);
+  document.getElementById('short-break-duration').value = Math.floor(timerConfig['short-break'] / 60);
+  document.getElementById('long-break-duration').value = Math.floor(timerConfig['long-break'] / 60);
+  document.getElementById('long-break-interval').value = timerConfig['long-break-interval'];
+  
+  // Автоматизация
+  document.getElementById('auto-start-breaks').checked = timerConfig['auto-start-breaks'];
+  document.getElementById('auto-start-pomodoros').checked = timerConfig['auto-start-pomodoros'];
+  
+  // Уведомления
+  document.getElementById('sound-enabled').checked = timerConfig['sound-enabled'];
+  document.getElementById('sound-volume').value = timerConfig['sound-volume'];
+  document.getElementById('notification-sound').value = timerConfig['notification-sound'];
+  
+  // Обновляем отображение громкости
+  document.getElementById('volume-display').textContent = `${timerConfig['sound-volume']}%`;
+}
+
+// Сохранение настроек таймера
+async function saveTimerSettings() {
+  // Получаем значения из интерфейса
+  const newSettings = {
+    pomodoro: parseInt(document.getElementById('pomodoro-duration').value) * 60,
+    'short-break': parseInt(document.getElementById('short-break-duration').value) * 60,
+    'long-break': parseInt(document.getElementById('long-break-duration').value) * 60,
+    'long-break-interval': parseInt(document.getElementById('long-break-interval').value),
+    'auto-start-breaks': document.getElementById('auto-start-breaks').checked,
+    'auto-start-pomodoros': document.getElementById('auto-start-pomodoros').checked,
+    'sound-enabled': document.getElementById('sound-enabled').checked,
+    'sound-volume': parseInt(document.getElementById('sound-volume').value),
+    'notification-sound': document.getElementById('notification-sound').value
+  };
+  
+  // Валидация значений
+  if (newSettings.pomodoro < 60) newSettings.pomodoro = 60; // Минимум 1 минута
+  if (newSettings['short-break'] < 60) newSettings['short-break'] = 60;
+  if (newSettings['long-break'] < 60) newSettings['long-break'] = 60;
+  if (newSettings['long-break-interval'] < 1) newSettings['long-break-interval'] = 1;
+  
+  // Обновляем конфигурацию
+  timerConfig = { ...newSettings };
+  
+  try {
+    // Сохраняем на сервере
+    const response = await fetch('/api/pomodoro-settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(timerConfig)
+    });
+    
+    if (response.ok) {
+      console.log('Настройки таймера сохранены на сервере');
+    } else {
+      console.warn('Не удалось сохранить настройки на сервере:', await response.text());
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настроек на сервере:', error);
+  }
+  
+  // В любом случае сохраняем локально
+  setUserStorage('pomodoroSettings', timerConfig);
+  
+  // Если таймер не запущен, обновляем отображение таймера
+  if (!timerRunning) {
+    resetTimer();
+  }
+  
+  // Уведомление пользователя
+  showNotification('Настройки сохранены');
+  
+  console.log('Настройки таймера сохранены:', timerConfig);
+  
+  return timerConfig;
+}
+
+// Показать уведомление
+function showNotification(message, type = 'success') {
+  // Создаем элемент уведомления
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+  
+  // Добавляем уведомление в DOM
+  document.body.appendChild(notification);
+  
+  // Анимация появления
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+  
+  // Удаляем уведомление через 3 секунды
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 300);
+  }, 3000);
 }
 
 // Запрашиваем разрешение на уведомления при загрузке страницы

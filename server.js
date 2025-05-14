@@ -486,6 +486,83 @@ app.post('/api/pomodoro-stats', requireAuth, (req, res) => {
   }
 });
 
+// Получение настроек помодоро
+app.get('/api/pomodoro-settings', requireAuth, (req, res) => {
+  try {
+    const userId = req.user.id || req.user.login.toLowerCase();
+    
+    // Настройки по умолчанию
+    const defaultSettings = {
+      pomodoro: 25 * 60, // 25 минут
+      'short-break': 5 * 60, // 5 минут
+      'long-break': 15 * 60, // 15 минут
+      'long-break-interval': 4, // после 4 помодоро
+      'auto-start-breaks': true,
+      'auto-start-pomodoros': true,
+      'sound-enabled': true,
+      'sound-volume': 80,
+      'notification-sound': 'bell'
+    };
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized) {
+      dbManager.loadGroupData('users', userId, 'pomodoroSettings')
+        .then(settings => {
+          res.json(settings || defaultSettings);
+        })
+        .catch(error => {
+          console.error(`Ошибка при загрузке настроек помодоро: ${error.message}`);
+          res.json(defaultSettings);
+        });
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.pomodoroSettings) {
+        global.pomodoroSettings = new Map();
+      }
+      
+      if (!global.pomodoroSettings.has(userId)) {
+        global.pomodoroSettings.set(userId, defaultSettings);
+      }
+      
+      res.json(global.pomodoroSettings.get(userId));
+    }
+  } catch (error) {
+    console.error(`Ошибка при получении настроек помодоро: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при получении настроек помодоро' });
+  }
+});
+
+// Сохранение настроек помодоро
+app.post('/api/pomodoro-settings', requireAuth, (req, res) => {
+  try {
+    const userId = req.user.id || req.user.login.toLowerCase();
+    const settings = req.body;
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized) {
+      dbManager.saveGroupData('users', userId, 'pomodoroSettings', settings)
+        .then(() => {
+          res.status(200).json({ success: true });
+        })
+        .catch(error => {
+          console.error(`Ошибка при сохранении настроек помодоро: ${error.message}`);
+          res.status(500).json({ error: 'Ошибка при сохранении настроек помодоро' });
+        });
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.pomodoroSettings) {
+        global.pomodoroSettings = new Map();
+      }
+      
+      global.pomodoroSettings.set(userId, settings);
+      res.status(200).json({ success: true });
+    }
+  } catch (error) {
+    console.error(`Ошибка при сохранении настроек помодоро: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при сохранении настроек помодоро' });
+  }
+});
+
 // Настройка WebSocket сервера
 const wss = new WebSocket.Server({ server });
 

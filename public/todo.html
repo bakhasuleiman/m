@@ -6,17 +6,21 @@
   <title>ToDo список и Помодоро - Система мониторинга</title>
   <style>
     :root {
-      --primary: #4a6baf;
-      --primary-dark: #3a5a99;
-      --secondary: #f3f4f6;
-      --gray-light: #e5e7eb;
-      --gray: #9ca3af;
-      --gray-dark: #4b5563;
-      --danger: #ef4444;
-      --success: #10b981;
-      --warning: #f59e0b;
+      --primary: #2c3e50;
+      --primary-dark: #1a2530;
+      --secondary: #f8f9fa;
+      --gray-light: #e9ecef;
+      --gray: #adb5bd;
+      --gray-dark: #495057;
+      --danger: #e74c3c;
+      --success: #2ecc71;
+      --warning: #f39c12;
       --white: #ffffff;
       --black: #000000;
+      --accent: #3498db;
+      --border-radius: 4px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --transition: all 0.2s ease;
     }
 
     * {
@@ -26,15 +30,16 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Consolas', monospace;
       line-height: 1.6;
       color: var(--gray-dark);
       background-color: var(--secondary);
       padding-bottom: 40px;
+      letter-spacing: -0.03em;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 0 15px;
     }
@@ -42,8 +47,8 @@
     header {
       background-color: var(--primary);
       color: var(--white);
-      padding: 1rem 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 0.8rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .header-content {
@@ -53,8 +58,9 @@
     }
 
     .header-title {
-      font-size: 1.5rem;
-      font-weight: 600;
+      font-size: 1.2rem;
+      font-weight: normal;
+      letter-spacing: 0.5px;
     }
 
     nav ul {
@@ -63,31 +69,35 @@
     }
 
     nav li {
-      margin-left: 20px;
+      margin-left: 15px;
     }
 
     nav a {
       color: var(--white);
       text-decoration: none;
-      padding: 0.5rem 0.75rem;
-      border-radius: 4px;
-      transition: background-color 0.3s;
+      padding: 0.3rem 0.5rem;
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+      font-size: 0.85rem;
+      opacity: 0.9;
     }
 
     nav a:hover {
-      background-color: var(--primary-dark);
+      background-color: rgba(255, 255, 255, 0.1);
+      opacity: 1;
     }
 
     main {
-      padding: 2rem 0;
+      padding: 1.5rem 0;
     }
 
     .card {
       background-color: var(--white);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--gray-light);
     }
 
     .card-header {
@@ -95,28 +105,38 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--gray-light);
     }
 
     .card-title {
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.1rem;
+      font-weight: normal;
       color: var(--primary);
+      letter-spacing: 0.5px;
     }
 
     .btn {
       display: inline-block;
       background-color: var(--primary);
       color: var(--white);
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--border-radius);
       cursor: pointer;
       border: none;
-      font-size: 0.875rem;
-      transition: background-color 0.3s;
+      font-size: 0.85rem;
+      transition: var(--transition);
+      font-family: 'Consolas', monospace;
+      letter-spacing: 0;
     }
 
     .btn:hover {
       background-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
     }
 
     .btn-success {
@@ -124,7 +144,7 @@
     }
 
     .btn-success:hover {
-      background-color: #0da271;
+      background-color: #27ae60;
     }
 
     .btn-danger {
@@ -132,7 +152,7 @@
     }
 
     .btn-danger:hover {
-      background-color: #dc2626;
+      background-color: #c0392b;
     }
 
     .btn-warning {
@@ -140,21 +160,24 @@
     }
 
     .btn-warning:hover {
-      background-color: #d97706;
+      background-color: #d35400;
     }
 
     input[type="text"], textarea {
       width: 100%;
-      padding: 0.75rem;
+      padding: 0.6rem;
       border: 1px solid var(--gray-light);
-      border-radius: 4px;
-      font-size: 0.875rem;
+      border-radius: var(--border-radius);
+      font-size: 0.9rem;
       margin-bottom: 1rem;
+      font-family: 'Consolas', monospace;
+      transition: var(--transition);
     }
 
     input[type="text"]:focus, textarea:focus {
       outline: none;
-      border-color: var(--primary);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
     }
 
     .todo-form {
@@ -175,8 +198,13 @@
     .todo-item {
       display: flex;
       align-items: center;
-      padding: 0.75rem 0;
+      padding: 0.6rem 0;
       border-bottom: 1px solid var(--gray-light);
+      transition: var(--transition);
+    }
+
+    .todo-item:hover {
+      background-color: rgba(0, 0, 0, 0.01);
     }
 
     .todo-item:last-child {
@@ -184,13 +212,34 @@
     }
 
     .todo-checkbox {
-      margin-right: 0.75rem;
+      position: relative;
       width: 18px;
       height: 18px;
+      margin-right: 0.75rem;
+      appearance: none;
+      border: 1px solid var(--gray);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .todo-checkbox:checked {
+      background-color: var(--success);
+      border-color: var(--success);
+    }
+
+    .todo-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -1px;
+      left: 3px;
+      color: white;
+      font-size: 14px;
     }
 
     .todo-text {
       flex: 1;
+      font-size: 0.9rem;
     }
 
     .todo-date {
@@ -203,31 +252,27 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1.5rem;
-    }
-
-    .timer-display {
-      font-size: 4rem;
-      font-weight: 600;
-      margin: 1rem 0;
-    }
-
-    .timer-controls {
-      display: flex;
-      gap: 0.5rem;
+      padding: 1.5rem 0;
     }
 
     .timer-modes {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      gap: 0.25rem;
+      margin-bottom: 1.5rem;
     }
 
     .timer-mode {
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--border-radius);
       background-color: var(--gray-light);
       cursor: pointer;
+      font-size: 0.85rem;
+      transition: var(--transition);
+      border: 1px solid transparent;
+    }
+
+    .timer-mode:hover {
+      background-color: #e2e6ea;
     }
 
     .timer-mode.active {
@@ -235,20 +280,124 @@
       color: var(--white);
     }
 
+    .timer-display {
+      font-size: 5rem;
+      font-weight: 400;
+      margin: 0.5rem 0 1.5rem;
+      letter-spacing: 2px;
+      color: var(--primary-dark);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .timer-controls .btn {
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .pomodoro-counter {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--gray-dark);
+    }
+
+    .pomodoro-counter span {
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .user-info-bar {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      padding: 0.6rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--gray-light);
+    }
+
+    .current-user {
+      font-size: 0.85rem;
+      color: var(--gray-dark);
+      display: flex;
+      align-items: center;
+    }
+
+    .current-user::before {
+      content: '👤';
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .current-user span {
+      font-weight: bold;
+      color: var(--primary);
+    }
+
     .stats-container {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 2rem;
+    }
+
+    .stats-header {
+      font-size: 1rem;
+      font-weight: normal;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .stats-header::before {
+      content: '📊';
+      margin-right: 0.5rem;
     }
 
     .heatmap {
       width: 100%;
       overflow-x: auto;
+      padding: 0.5rem 0;
     }
 
     .heatmap-container {
       display: grid;
+      grid-template-columns: auto repeat(53, 1fr);
+      gap: 3px;
+    }
+
+    .heatmap-labels {
+      display: grid;
+      grid-template-rows: repeat(7, 1fr);
+      gap: 3px;
+      margin-right: 4px;
+    }
+
+    .heatmap-label {
+      font-size: 0.7rem;
+      color: var(--gray);
+      height: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    .heatmap-days {
+      display: grid;
       grid-template-columns: repeat(53, 1fr);
+      grid-auto-flow: column;
+      gap: 3px;
+    }
+
+    .heatmap-day-wrapper {
+      display: grid;
+      grid-template-rows: repeat(7, 1fr);
       gap: 3px;
     }
 
@@ -257,6 +406,16 @@
       height: 12px;
       background-color: var(--gray-light);
       border-radius: 2px;
+      transition: var(--transition);
+      cursor: default;
+    }
+
+    .heatmap-day:hover {
+      transform: scale(1.2);
+    }
+
+    .heatmap-day[data-level="0"] {
+      background-color: #ebedf0;
     }
 
     .heatmap-day[data-level="1"] {
@@ -275,9 +434,177 @@
       background-color: #216e39;
     }
 
+    .heatmap-months {
+      display: grid;
+      grid-template-columns: repeat(53, 1fr);
+      gap: 3px;
+      margin-bottom: 6px;
+      margin-left: 20px;
+    }
+
+    .heatmap-month {
+      font-size: 0.7rem;
+      color: var(--gray);
+      text-align: center;
+      grid-column: span 4;
+    }
+
     .chart-container {
       height: 200px;
       position: relative;
+      padding: 1rem 0;
+    }
+
+    .chart-period-selector {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+      gap: 0.5rem;
+    }
+
+    .chart-period-btn {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      background-color: var(--gray-light);
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      color: var(--gray-dark);
+      font-family: 'Consolas', monospace;
+      transition: var(--transition);
+    }
+
+    .chart-period-btn:hover {
+      background-color: #e2e6ea;
+    }
+
+    .chart-period-btn.active {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+
+    /* Стили для настроек таймера */
+    .settings-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .settings-group {
+      border-bottom: 1px solid var(--gray-light);
+      padding-bottom: 1.25rem;
+    }
+
+    .settings-group:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .settings-group-title {
+      font-size: 0.95rem;
+      font-weight: normal;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .settings-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .settings-row label {
+      flex: 1;
+      font-size: 0.9rem;
+      color: var(--gray-dark);
+    }
+
+    .settings-row input[type="number"] {
+      width: 80px;
+      padding: 0.4rem;
+      border: 1px solid var(--gray-light);
+      border-radius: var(--border-radius);
+      font-size: 0.9rem;
+      margin: 0;
+      font-family: 'Consolas', monospace;
+    }
+
+    .settings-row input[type="range"] {
+      flex: 1;
+      max-width: 200px;
+    }
+
+    #volume-display {
+      min-width: 45px;
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-left: 0.5rem;
+    }
+
+    .settings-row select {
+      width: 200px;
+      padding: 0.4rem;
+      border: 1px solid var(--gray-light);
+      border-radius: var(--border-radius);
+      font-size: 0.9rem;
+      font-family: 'Consolas', monospace;
+      background-color: var(--white);
+    }
+
+    .checkbox-row {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      margin-right: 0.75rem;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-row label {
+      flex: unset;
+      cursor: pointer;
+    }
+
+    /* Стили для уведомлений */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      border-radius: var(--border-radius);
+      background-color: var(--white);
+      color: var(--gray-dark);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 300px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .notification-success {
+      border-left: 4px solid var(--success);
+    }
+
+    .notification-error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .notification-warning {
+      border-left: 4px solid var(--warning);
     }
 
     /* Responsive styles */
@@ -288,12 +615,67 @@
       }
 
       nav ul {
-        margin-top: 1rem;
+        margin-top: 0.5rem;
       }
 
       nav li {
         margin-left: 0;
-        margin-right: 20px;
+        margin-right: 15px;
+      }
+
+      .timer-display {
+        font-size: 3.5rem;
+      }
+
+      .timer-controls {
+        flex-wrap: wrap;
+      }
+
+      .timer-controls .btn {
+        min-width: auto;
+        flex: 1;
+      }
+
+      .heatmap-container {
+        width: 700px;
+      }
+      
+      .settings-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .settings-row label {
+        margin-bottom: 0.25rem;
+      }
+      
+      .settings-row input[type="number"],
+      .settings-row select {
+        width: 100%;
+      }
+      
+      .settings-row input[type="range"] {
+        max-width: 100%;
+      }
+      
+      .checkbox-row {
+        flex-direction: row-reverse;
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .timer-display {
+        font-size: 2.5rem;
+      }
+
+      .todo-form {
+        flex-direction: column;
+      }
+
+      .todo-form input {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
       }
     }
   </style>
@@ -314,6 +696,12 @@
   </header>
 
   <main class="container">
+    <div class="user-info-bar">
+      <div class="current-user">
+        Пользователь: <span id="current-user-name">Загрузка...</span>
+      </div>
+    </div>
+    
     <div class="row">
       <div class="col">
         <!-- Секция таймера Помодоро -->
@@ -335,6 +723,68 @@
             </div>
             <div class="pomodoro-counter">
               <p>Завершено помодоро: <span id="pomodoro-count">0</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Настройки таймера Помодоро -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Настройки таймера</h2>
+            <button class="btn" id="save-settings">Сохранить</button>
+          </div>
+          <div class="settings-form">
+            <div class="settings-group">
+              <h3 class="settings-group-title">Продолжительность (минуты)</h3>
+              <div class="settings-row">
+                <label for="pomodoro-duration">Помодоро:</label>
+                <input type="number" id="pomodoro-duration" min="1" max="60" value="25">
+              </div>
+              <div class="settings-row">
+                <label for="short-break-duration">Короткий перерыв:</label>
+                <input type="number" id="short-break-duration" min="1" max="30" value="5">
+              </div>
+              <div class="settings-row">
+                <label for="long-break-duration">Длинный перерыв:</label>
+                <input type="number" id="long-break-duration" min="1" max="60" value="15">
+              </div>
+              <div class="settings-row">
+                <label for="long-break-interval">Длинный перерыв после (кол-во помодоро):</label>
+                <input type="number" id="long-break-interval" min="1" max="10" value="4">
+              </div>
+            </div>
+            
+            <div class="settings-group">
+              <h3 class="settings-group-title">Автоматизация</h3>
+              <div class="settings-row checkbox-row">
+                <input type="checkbox" id="auto-start-breaks" checked>
+                <label for="auto-start-breaks">Автоматически начинать перерывы</label>
+              </div>
+              <div class="settings-row checkbox-row">
+                <input type="checkbox" id="auto-start-pomodoros" checked>
+                <label for="auto-start-pomodoros">Автоматически начинать следующее помодоро</label>
+              </div>
+            </div>
+            
+            <div class="settings-group">
+              <h3 class="settings-group-title">Уведомления</h3>
+              <div class="settings-row checkbox-row">
+                <input type="checkbox" id="sound-enabled" checked>
+                <label for="sound-enabled">Звуковые уведомления</label>
+              </div>
+              <div class="settings-row">
+                <label for="sound-volume">Громкость:</label>
+                <input type="range" id="sound-volume" min="0" max="100" value="80">
+                <span id="volume-display">80%</span>
+              </div>
+              <div class="settings-row">
+                <label for="notification-sound">Звук уведомления:</label>
+                <select id="notification-sound">
+                  <option value="bell">Колокольчик</option>
+                  <option value="digital">Цифровой</option>
+                  <option value="simple">Простой</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -372,13 +822,18 @@
       </div>
       <div class="stats-container">
         <div>
-          <h3>Активность задач (в стиле GitHub)</h3>
+          <h3 class="stats-header">Активность задач</h3>
           <div class="heatmap" id="todos-heatmap">
             <!-- Тепловая карта активности будет сгенерирована JS -->
           </div>
         </div>
         <div>
-          <h3>Статистика Помодоро</h3>
+          <h3 class="stats-header">Статистика Помодоро</h3>
+          <div class="chart-period-selector">
+            <button class="chart-period-btn active" data-period="week">Неделя</button>
+            <button class="chart-period-btn" data-period="month">Месяц</button>
+            <button class="chart-period-btn" data-period="year">Год</button>
+          </div>
           <div class="chart-container" id="pomodoro-chart">
             <!-- График будет сгенерирован JS -->
           </div>
