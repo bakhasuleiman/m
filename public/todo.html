@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDo список и Помодоро - Система мониторинга</title>
+  <style>
+    :root {
+      --primary: #4a6baf;
+      --primary-dark: #3a5a99;
+      --secondary: #f3f4f6;
+      --gray-light: #e5e7eb;
+      --gray: #9ca3af;
+      --gray-dark: #4b5563;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --white: #ffffff;
+      --black: #000000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--gray-dark);
+      background-color: var(--secondary);
+      padding-bottom: 40px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+
+    header {
+      background-color: var(--primary);
+      color: var(--white);
+      padding: 1rem 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+    }
+
+    nav li {
+      margin-left: 20px;
+    }
+
+    nav a {
+      color: var(--white);
+      text-decoration: none;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+
+    nav a:hover {
+      background-color: var(--primary-dark);
+    }
+
+    main {
+      padding: 2rem 0;
+    }
+
+    .card {
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-block;
+      background-color: var(--primary);
+      color: var(--white);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      font-size: 0.875rem;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .btn-success {
+      background-color: var(--success);
+    }
+
+    .btn-success:hover {
+      background-color: #0da271;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+
+    .btn-warning {
+      background-color: var(--warning);
+    }
+
+    .btn-warning:hover {
+      background-color: #d97706;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--gray-light);
+      border-radius: 4px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .todo-form {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+
+    .todo-form input {
+      flex: 1;
+      margin-bottom: 0;
+      margin-right: 0.5rem;
+    }
+
+    .todo-list {
+      list-style: none;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    .todo-item:last-child {
+      border-bottom: none;
+    }
+
+    .todo-checkbox {
+      margin-right: 0.75rem;
+      width: 18px;
+      height: 18px;
+    }
+
+    .todo-text {
+      flex: 1;
+    }
+
+    .todo-date {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-left: 0.75rem;
+    }
+
+    .pomodoro-timer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    .timer-display {
+      font-size: 4rem;
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .timer-modes {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .timer-mode {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      background-color: var(--gray-light);
+      cursor: pointer;
+    }
+
+    .timer-mode.active {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+
+    .stats-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .heatmap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .heatmap-container {
+      display: grid;
+      grid-template-columns: repeat(53, 1fr);
+      gap: 3px;
+    }
+
+    .heatmap-day {
+      width: 12px;
+      height: 12px;
+      background-color: var(--gray-light);
+      border-radius: 2px;
+    }
+
+    .heatmap-day[data-level="1"] {
+      background-color: #9be9a8;
+    }
+
+    .heatmap-day[data-level="2"] {
+      background-color: #40c463;
+    }
+
+    .heatmap-day[data-level="3"] {
+      background-color: #30a14e;
+    }
+
+    .heatmap-day[data-level="4"] {
+      background-color: #216e39;
+    }
+
+    .chart-container {
+      height: 200px;
+      position: relative;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      nav ul {
+        margin-top: 1rem;
+      }
+
+      nav li {
+        margin-left: 0;
+        margin-right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <div class="header-title">Система мониторинга</div>
+      <nav>
+        <ul>
+          <li><a href="/admin">Главная</a></li>
+          <li><a href="/admin/access-codes">Коды доступа</a></li>
+          <li><a href="/todo">Todo и Помодоро</a></li>
+          <li><a href="/logout" id="logout-btn">Выйти</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="row">
+      <div class="col">
+        <!-- Секция таймера Помодоро -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Таймер Помодоро</h2>
+          </div>
+          <div class="pomodoro-timer">
+            <div class="timer-modes">
+              <div class="timer-mode active" data-mode="pomodoro">Помодоро</div>
+              <div class="timer-mode" data-mode="short-break">Короткий перерыв</div>
+              <div class="timer-mode" data-mode="long-break">Длинный перерыв</div>
+            </div>
+            <div class="timer-display" id="timer">25:00</div>
+            <div class="timer-controls">
+              <button class="btn" id="start-timer">Старт</button>
+              <button class="btn" id="pause-timer" disabled>Пауза</button>
+              <button class="btn" id="reset-timer">Сброс</button>
+            </div>
+            <div class="pomodoro-counter">
+              <p>Завершено помодоро: <span id="pomodoro-count">0</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Секция активных задач -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Активные задачи</h2>
+          </div>
+          <div class="todo-form">
+            <input type="text" id="new-todo" placeholder="Добавить новую задачу...">
+            <button class="btn" id="add-todo">Добавить</button>
+          </div>
+          <ul class="todo-list" id="active-todos">
+            <!-- Здесь будут активные задачи -->
+          </ul>
+        </div>
+
+        <!-- Секция архива -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Архив задач</h2>
+          </div>
+          <ul class="todo-list" id="archived-todos">
+            <!-- Здесь будут архивированные задачи -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Статистика</h2>
+      </div>
+      <div class="stats-container">
+        <div>
+          <h3>Активность задач (в стиле GitHub)</h3>
+          <div class="heatmap" id="todos-heatmap">
+            <!-- Тепловая карта активности будет сгенерирована JS -->
+          </div>
+        </div>
+        <div>
+          <h3>Статистика Помодоро</h3>
+          <div class="chart-container" id="pomodoro-chart">
+            <!-- График будет сгенерирован JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="todo.js"></script>
+</body>
+</html> 

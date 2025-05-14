@@ -187,6 +187,11 @@ app.get('/admin/access-codes', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'access-codes.html'));
 });
 
+// Страница Todo и Помодоро (защищена аутентификацией)
+app.get('/todo', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'todo.html'));
+});
+
 // API для управления кодами доступа
 // Получение всех кодов
 app.get('/api/access-codes', requireAuth, (req, res) => {
@@ -291,6 +296,193 @@ app.post('/api/github-db-sync', requireAuth, requireAdmin, async (req, res) => {
       success: false,
       error: `Ошибка при синхронизации с GitHub: ${error.message}`
     });
+  }
+});
+
+// API для Todo и Помодоро
+// Получение списка задач
+app.get('/api/todos', requireAuth, (req, res) => {
+  try {
+    // Получаем коллекцию задач для пользователя
+    const userId = req.user.id || req.user.login.toLowerCase();
+    let userTodos = [];
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized && dbManager.hasCollection('todos')) {
+      const todosCollection = dbManager.collection('todos');
+      // Получаем только задачи текущего пользователя
+      userTodos = Array.from(todosCollection.values())
+        .filter(todo => todo.userId === userId);
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.todos) {
+        global.todos = new Map();
+      }
+      
+      // Получаем задачи пользователя
+      if (!global.todos.has(userId)) {
+        global.todos.set(userId, []);
+      }
+      userTodos = global.todos.get(userId);
+    }
+    
+    res.json(userTodos);
+  } catch (error) {
+    console.error(`Ошибка при получении задач: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при получении задач' });
+  }
+});
+
+// Добавление новой задачи
+app.post('/api/todos', requireAuth, (req, res) => {
+  try {
+    const userId = req.user.id || req.user.login.toLowerCase();
+    const newTodo = {
+      id: req.body.id || uuidv4(),
+      text: req.body.text,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      userId
+    };
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized && dbManager.hasCollection('todos')) {
+      const todosCollection = dbManager.collection('todos');
+      todosCollection.set(newTodo.id, newTodo);
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.todos) {
+        global.todos = new Map();
+      }
+      
+      // Получаем или создаем массив задач пользователя
+      if (!global.todos.has(userId)) {
+        global.todos.set(userId, []);
+      }
+      
+      const userTodos = global.todos.get(userId);
+      userTodos.push(newTodo);
+      global.todos.set(userId, userTodos);
+    }
+    
+    res.status(201).json(newTodo);
+  } catch (error) {
+    console.error(`Ошибка при добавлении задачи: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при добавлении задачи' });
+  }
+});
+
+// Обновление задачи
+app.patch('/api/todos/:id', requireAuth, (req, res) => {
+  try {
+    const todoId = req.params.id;
+    const userId = req.user.id || req.user.login.toLowerCase();
+    const updates = req.body;
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized && dbManager.hasCollection('todos')) {
+      const todosCollection = dbManager.collection('todos');
+      const todo = todosCollection.get(todoId);
+      
+      // Проверяем существование задачи и принадлежность пользователю
+      if (!todo || todo.userId !== userId) {
+        return res.status(404).json({ error: 'Задача не найдена' });
+      }
+      
+      // Обновляем задачу
+      const updatedTodo = { ...todo, ...updates };
+      todosCollection.set(todoId, updatedTodo);
+      
+      res.json(updatedTodo);
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.todos || !global.todos.has(userId)) {
+        return res.status(404).json({ error: 'Задача не найдена' });
+      }
+      
+      const userTodos = global.todos.get(userId);
+      const todoIndex = userTodos.findIndex(todo => todo.id === todoId);
+      
+      if (todoIndex === -1) {
+        return res.status(404).json({ error: 'Задача не найдена' });
+      }
+      
+      // Обновляем задачу
+      userTodos[todoIndex] = { ...userTodos[todoIndex], ...updates };
+      global.todos.set(userId, userTodos);
+      
+      res.json(userTodos[todoIndex]);
+    }
+  } catch (error) {
+    console.error(`Ошибка при обновлении задачи: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при обновлении задачи' });
+  }
+});
+
+// Получение статистики помодоро
+app.get('/api/pomodoro-stats', requireAuth, (req, res) => {
+  try {
+    const userId = req.user.id || req.user.login.toLowerCase();
+    let stats = {};
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized) {
+      // Пытаемся загрузить данные из группы пользователя
+      dbManager.loadGroupData('users', userId, 'pomodoroStats')
+        .then(loadedStats => {
+          res.json(loadedStats || {});
+        })
+        .catch(error => {
+          console.error(`Ошибка при загрузке статистики помодоро: ${error.message}`);
+          res.json({});
+        });
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.pomodoroStats) {
+        global.pomodoroStats = new Map();
+      }
+      
+      if (!global.pomodoroStats.has(userId)) {
+        global.pomodoroStats.set(userId, {});
+      }
+      
+      res.json(global.pomodoroStats.get(userId));
+    }
+  } catch (error) {
+    console.error(`Ошибка при получении статистики помодоро: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при получении статистики помодоро' });
+  }
+});
+
+// Сохранение статистики помодоро
+app.post('/api/pomodoro-stats', requireAuth, (req, res) => {
+  try {
+    const userId = req.user.id || req.user.login.toLowerCase();
+    const stats = req.body;
+    
+    // Если инициализирована GitHub DB, используем её
+    if (dbManager.initialized) {
+      dbManager.saveGroupData('users', userId, 'pomodoroStats', stats)
+        .then(() => {
+          res.status(200).json({ success: true });
+        })
+        .catch(error => {
+          console.error(`Ошибка при сохранении статистики помодоро: ${error.message}`);
+          res.status(500).json({ error: 'Ошибка при сохранении статистики помодоро' });
+        });
+    } else {
+      // Иначе используем локальное хранилище
+      if (!global.pomodoroStats) {
+        global.pomodoroStats = new Map();
+      }
+      
+      global.pomodoroStats.set(userId, stats);
+      res.status(200).json({ success: true });
+    }
+  } catch (error) {
+    console.error(`Ошибка при сохранении статистики помодоро: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при сохранении статистики помодоро' });
   }
 });
 
