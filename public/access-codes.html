@@ -3,750 +3,390 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Управление кодами доступа</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Коды доступа - Система мониторинга</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --primary-color: #5046e5;
-      --primary-light: #6e66ff;
-      --secondary-color: #f0f0ff;
-      --text-color: #333;
-      --text-light: #666;
-      --border-color: #e0e0e0;
-      --danger-color: #e53935;
-      --warning-color: #f57c00;
-      --success-color: #43a047;
-      --background-light: #f9f9ff;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Дополнительные стили для страницы кодов доступа */
+    .panel {
+      margin-bottom: var(--spacing-lg);
     }
     
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.5;
-      color: var(--text-color);
-      background-color: #f5f5f5;
-      padding: 0;
-      overflow-x: hidden;
-    }
-    
-    header {
-      background-color: #fff;
-      border-bottom: 1px solid var(--border-color);
-      padding: 1rem;
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header-content {
-      max-width: 1400px;
-      margin: 0 auto;
+    .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: var(--spacing-md);
     }
     
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: normal;
     }
     
-    .logo-icon {
-      width: 24px;
-      height: 24px;
-      background-color: var(--primary-color);
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
+    .panel-content {
+      border: 1px solid var(--lighter-gray);
+      background-color: var(--white);
+      padding: var(--spacing-md);
     }
     
-    .nav-links {
-      display: flex;
-      gap: 1.5rem;
-    }
-    
-    .nav-link {
-      color: var(--text-light);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
-    
-    .nav-link:hover {
-      color: var(--primary-color);
-    }
-    
-    .nav-link.active {
-      color: var(--primary-color);
-      font-weight: 500;
-    }
-    
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .logout-btn {
-      font-size: 0.8rem;
-      color: var(--text-light);
-      padding: 0.25rem 0.5rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background-color: transparent;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-    
-    .logout-btn:hover {
-      background-color: var(--secondary-color);
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-    }
-    
-    .page-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-    }
-    
-    .action-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    
-    .btn:hover {
-      background-color: var(--primary-light);
-    }
-    
-    .btn-danger {
-      background-color: var(--danger-color);
-    }
-    
-    .btn-danger:hover {
-      background-color: #f44336;
-    }
-    
-    .card {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    
-    table {
+    .data-table {
       width: 100%;
       border-collapse: collapse;
     }
     
-    thead {
-      background-color: var(--background-light);
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    th {
+    .data-table th, .data-table td {
+      padding: var(--spacing-sm);
       text-align: left;
-      padding: 1rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--text-light);
+      border-bottom: 1px solid var(--bg-gray);
     }
     
-    td {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 0.9rem;
+    .data-table th {
+      background-color: var(--bg-gray);
     }
     
-    tbody tr:last-child td {
-      border-bottom: none;
+    .data-table tr:hover {
+      background-color: var(--bg-gray);
     }
     
-    .code-badge {
-      font-family: monospace;
-      background-color: var(--secondary-color);
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-weight: 500;
-      color: var(--primary-color);
+    .form-row {
+      margin-bottom: var(--spacing-md);
     }
     
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 50px;
-      font-size: 0.8rem;
-      font-weight: 500;
+    .form-row label {
+      display: block;
+      margin-bottom: var(--spacing-xs);
+      font-weight: bold;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-md);
     }
     
     .status-active {
-      background-color: rgba(67, 160, 71, 0.1);
-      color: var(--success-color);
+      color: var(--accent-green);
     }
     
-    .status-inactive {
-      background-color: rgba(229, 57, 53, 0.1);
-      color: var(--danger-color);
+    .status-expired {
+      color: var(--lighter-gray);
     }
     
-    .actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-    
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      background-color: transparent;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .action-btn:hover {
-      background-color: var(--background-light);
-    }
-    
-    .action-btn svg {
-      width: 16px;
-      height: 16px;
-    }
-    
-    .link-column {
-      max-width: 300px;
-    }
-    
-    .link-value {
-      font-family: monospace;
-      word-break: break-all;
-      white-space: normal;
-      color: var(--text-light);
-      font-size: 0.85rem;
-    }
-    
-    .copy-tooltip {
+    .search-box {
       position: relative;
-    }
-    
-    .copy-tooltip .tooltip-text {
-      position: absolute;
-      top: -30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #333;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    
-    .empty-state {
-      padding: 3rem 1rem;
-      text-align: center;
-      color: var(--text-light);
-    }
-    
-    .empty-state svg {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 1rem;
-      color: var(--text-light);
-      opacity: 0.5;
-    }
-    
-    .empty-state h3 {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
-    }
-    
-    .modal-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.3s, visibility 0.3s;
-    }
-    
-    .modal-backdrop.visible {
-      visibility: visible;
-      opacity: 1;
-    }
-    
-    .modal {
-      background-color: white;
-      border-radius: 8px;
       width: 100%;
       max-width: 400px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      overflow: hidden;
-      transform: translateY(20px);
-      transition: transform 0.3s;
+      margin-bottom: var(--spacing-md);
     }
     
-    .modal-backdrop.visible .modal {
-      transform: translateY(0);
+    .search-input {
+      width: 100%;
+      padding: var(--spacing-sm);
+      border: 1px solid var(--lighter-gray);
+      font-family: 'Consolas', monospace;
     }
     
-    .modal-header {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .code-display {
+      font-family: 'Consolas', monospace;
+      font-size: 1.2rem;
+      padding: var(--spacing-md);
+      background-color: var(--bg-gray);
+      border: 1px solid var(--lighter-gray);
+      margin-top: var(--spacing-sm);
+      text-align: center;
+      letter-spacing: 2px;
     }
     
-    .modal-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-    
-    .modal-body {
-      padding: 1.5rem;
-    }
-    
-    .modal-footer {
-      padding: 1rem;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-    
-    .btn-secondary {
-      background-color: white;
-      color: var(--text-color);
-      border: 1px solid var(--border-color);
-    }
-    
-    .btn-secondary:hover {
-      background-color: var(--background-light);
-    }
-    
-    .alert {
-      padding: 0.75rem 1rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-    
-    .alert-success {
-      background-color: rgba(67, 160, 71, 0.1);
-      color: var(--success-color);
-      border: 1px solid rgba(67, 160, 71, 0.2);
-    }
-    
-    .guide-btn {
-      color: var(--primary-color);
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-    
-    .guide-btn:hover {
-      background-color: var(--secondary-color);
+    .hidden {
+      display: none;
     }
     
     .copy-btn {
-      color: var(--text-light);
+      margin-top: var(--spacing-sm);
     }
   </style>
 </head>
 <body>
-  <!-- Хедер -->
   <header>
-    <div class="header-content">
-      <div class="logo">
-        <div class="logo-icon">Z</div>
-        <span>ZXC11</span>
-      </div>
-      
-      <div class="nav-links">
-        <a href="/admin" class="nav-link">Монитор</a>
-        <a href="/admin/access-codes" class="nav-link active">Коды доступа</a>
-        <a href="/todo" class="nav-link">Todo и Помодоро</a>
-        <a href="/admin/users" class="nav-link">Пользователи</a>
-        <a href="/admin/sessions" class="nav-link">Сессии</a>
-        <a href="/admin/export-import" class="nav-link">Экспорт/Импорт</a>
-        <button id="logout-btn" class="logout-btn">Выйти</button>
-      </div>
-      
-      <div class="header-right">
-        <!-- Удаляем эту лишнюю кнопку выхода -->
-      </div>
+    <div class="container header-content">
+      <h1 class="header-title">Система мониторинга</h1>
+      <nav>
+        <ul>
+          <li><a href="admin.html">Панель управления</a></li>
+          <li><a href="todo.html">ToDo и Помодоро</a></li>
+          <li><a href="users.html">Пользователи</a></li>
+          <li><a href="access-codes.html" class="bg-accent-blue">Коды доступа</a></li>
+          <li><a href="/logout">Выход</a></li>
+        </ul>
+      </nav>
     </div>
   </header>
-  
-  <!-- Основной контент -->
-  <div class="container">
-    <h1 class="page-title">Управление кодами доступа</h1>
-    
-    <div id="success-alert" class="alert alert-success" style="display: none;">
-      Ссылка скопирована в буфер обмена
-    </div>
-    
-    <div class="action-bar">
-      <button id="create-code" class="btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        Создать новый код
-      </button>
-    </div>
-    
-    <div class="card">
-      <table id="codes-table">
-        <thead>
-          <tr>
-            <th>Код</th>
-            <th>Ссылка</th>
-            <th>Статус</th>
-            <th>Создан</th>
-            <th>Последний вход</th>
-            <th>Использования</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody id="codes-list">
-          <!-- Строки таблицы будут добавлены через JavaScript -->
-        </tbody>
-      </table>
+
+  <main class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Управление кодами доступа</h2>
+        <button class="btn btn-primary" id="add-code-btn">Создать новый код</button>
+      </div>
       
-      <!-- Пустое состояние -->
-      <div id="empty-state" class="empty-state" style="display: none;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-          <line x1="1" y1="1" x2="23" y2="23"></line>
-        </svg>
-        <h3>Нет созданных кодов доступа</h3>
-        <p>Создайте новый код, чтобы предоставить клиентам доступ к системе мониторинга</p>
+      <div class="search-box">
+        <input type="text" class="search-input" id="search-codes" placeholder="Поиск кодов доступа...">
+      </div>
+      
+      <div class="panel-content">
+        <table class="data-table" id="codes-table">
+          <thead>
+            <tr>
+              <th>Код</th>
+              <th>Описание</th>
+              <th>Создан</th>
+              <th>Истекает</th>
+              <th>Статус</th>
+              <th>Использований</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="codes-table-body">
+            <!-- Данные будут загружены через JavaScript -->
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
+    
+    <!-- Форма добавления/редактирования кода (скрыта по умолчанию) -->
+    <div class="card hidden" id="code-form-container">
+      <div class="card-header">
+        <h3 class="card-title" id="form-title">Создание кода доступа</h3>
+      </div>
+      
+      <form id="code-form">
+        <input type="hidden" id="code-id">
+        
+        <div class="form-row">
+          <label for="code-description">Описание:</label>
+          <input type="text" id="code-description" name="description" required>
+        </div>
+        
+        <div class="form-row">
+          <label for="code-expiry">Срок действия (дней):</label>
+          <input type="number" id="code-expiry" name="expiry" min="1" value="30">
+        </div>
+        
+        <div class="form-row">
+          <label for="code-max-uses">Максимальное число использований:</label>
+          <input type="number" id="code-max-uses" name="maxUses" min="1" value="1">
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Сгенерировать код</button>
+          <button type="button" class="btn" id="cancel-form">Отмена</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Модальное окно с информацией о коде (скрыто по умолчанию) -->
+    <div class="card hidden" id="code-info-container">
+      <div class="card-header">
+        <h3 class="card-title">Код доступа сгенерирован</h3>
+      </div>
+      
+      <p>Новый код доступа успешно создан. Скопируйте его и передайте пользователю.</p>
+      
+      <div class="code-display" id="generated-code">ABC123XYZ</div>
+      
+      <button class="btn btn-primary copy-btn" id="copy-code-btn">Копировать код</button>
+      <button class="btn" id="close-info-btn">Закрыть</button>
+    </div>
+  </main>
   
-  <!-- Модальное окно подтверждения удаления -->
-  <div id="delete-modal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">Удаление кода доступа</div>
-        <button class="action-btn close-modal">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p>Вы уверены, что хотите удалить код доступа <span id="delete-code-id" class="code-badge"></span>?</p>
-        <p>Это действие нельзя отменить. Клиенты, использующие этот код, не смогут получить доступ к системе.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary close-modal">Отмена</button>
-        <button id="confirm-delete" class="btn btn-danger">Удалить</button>
-      </div>
-    </div>
-  </div>
+  <!-- Шаблон строки кода доступа -->
+  <template id="code-row-template">
+    <tr>
+      <td class="code-value"></td>
+      <td class="code-description"></td>
+      <td class="code-created"></td>
+      <td class="code-expires"></td>
+      <td class="code-status"></td>
+      <td class="code-uses"></td>
+      <td class="code-actions">
+        <button class="btn btn-primary view-code">Просмотр</button>
+        <button class="btn btn-danger delete-code">Удалить</button>
+      </td>
+    </tr>
+  </template>
   
   <script>
-    // DOM элементы
-    const codesList = document.getElementById('codes-list');
-    const emptyState = document.getElementById('empty-state');
-    const createCodeBtn = document.getElementById('create-code');
-    const deleteModal = document.getElementById('delete-modal');
-    const deleteCodeId = document.getElementById('delete-code-id');
-    const confirmDeleteBtn = document.getElementById('confirm-delete');
-    const closeModalBtns = document.querySelectorAll('.close-modal');
-    const successAlert = document.getElementById('success-alert');
-    
-    // Получение базового URL для кодов доступа
-    const baseUrl = window.location.origin;
-    let codeToDelete = null;
-    
-    // Загрузка всех кодов при загрузке страницы
-    document.addEventListener('DOMContentLoaded', loadCodes);
-    
-    // Обработчики событий
-    createCodeBtn.addEventListener('click', createNewCode);
-    confirmDeleteBtn.addEventListener('click', deleteCode);
-    closeModalBtns.forEach(btn => btn.addEventListener('click', () => deleteModal.classList.remove('visible')));
-    
-    // Загрузка кодов доступа с сервера
-    async function loadCodes() {
-      try {
-        const response = await fetch('/api/access-codes');
-        if (!response.ok) {
-          throw new Error('Ошибка при загрузке кодов доступа');
+    // Здесь будет JavaScript для управления кодами доступа
+    document.addEventListener('DOMContentLoaded', function() {
+      // Имитация загрузки кодов доступа
+      const codesData = [
+        { 
+          id: 1, 
+          code: 'ABC123XYZ', 
+          description: 'Тестовый код для нового пользователя', 
+          created: '01.06.2023', 
+          expires: '01.07.2023', 
+          status: 'active', 
+          maxUses: 1,
+          usesCount: 0
+        },
+        { 
+          id: 2, 
+          code: 'DEF456UVW', 
+          description: 'Код для демонстрации', 
+          created: '15.05.2023', 
+          expires: '15.06.2023', 
+          status: 'active', 
+          maxUses: 5,
+          usesCount: 2
+        },
+        { 
+          id: 3, 
+          code: 'GHI789RST', 
+          description: 'Истекший код', 
+          created: '01.04.2023', 
+          expires: '01.05.2023', 
+          status: 'expired', 
+          maxUses: 1,
+          usesCount: 0
         }
+      ];
+      
+      const codesTableBody = document.getElementById('codes-table-body');
+      const codeRowTemplate = document.getElementById('code-row-template');
+      const addCodeBtn = document.getElementById('add-code-btn');
+      const codeForm = document.getElementById('code-form');
+      const codeFormContainer = document.getElementById('code-form-container');
+      const cancelFormBtn = document.getElementById('cancel-form');
+      const formTitle = document.getElementById('form-title');
+      const searchInput = document.getElementById('search-codes');
+      const codeInfoContainer = document.getElementById('code-info-container');
+      const generatedCodeDisplay = document.getElementById('generated-code');
+      const copyCodeBtn = document.getElementById('copy-code-btn');
+      const closeInfoBtn = document.getElementById('close-info-btn');
+      
+      // Отображение кодов доступа
+      function renderCodes(codes) {
+        codesTableBody.innerHTML = '';
         
-        const codes = await response.json();
-        renderCodes(codes);
-      } catch (error) {
-        console.error('Ошибка:', error);
+        codes.forEach(code => {
+          const row = document.importNode(codeRowTemplate.content, true);
+          
+          row.querySelector('.code-value').textContent = code.code;
+          row.querySelector('.code-description').textContent = code.description;
+          row.querySelector('.code-created').textContent = code.created;
+          row.querySelector('.code-expires').textContent = code.expires;
+          
+          const statusCell = row.querySelector('.code-status');
+          statusCell.textContent = code.status === 'active' ? 'Активен' : 'Истек';
+          statusCell.classList.add(code.status === 'active' ? 'status-active' : 'status-expired');
+          
+          row.querySelector('.code-uses').textContent = `${code.usesCount} / ${code.maxUses}`;
+          
+          // Обработчики кнопок
+          const viewBtn = row.querySelector('.view-code');
+          viewBtn.addEventListener('click', () => viewCode(code));
+          
+          const deleteBtn = row.querySelector('.delete-code');
+          deleteBtn.addEventListener('click', () => deleteCode(code.id));
+          
+          codesTableBody.appendChild(row);
+        });
       }
-    }
-    
-    // Отображение кодов в таблице
-    function renderCodes(codes) {
-      codesList.innerHTML = '';
       
-      if (codes.length === 0) {
-        emptyState.style.display = 'block';
-        document.getElementById('codes-table').style.display = 'none';
-        return;
+      // Поиск кодов
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredCodes = codesData.filter(code => 
+          code.code.toLowerCase().includes(searchTerm) || 
+          code.description.toLowerCase().includes(searchTerm)
+        );
+        renderCodes(filteredCodes);
+      });
+      
+      // Просмотр кода
+      function viewCode(code) {
+        generatedCodeDisplay.textContent = code.code;
+        codeInfoContainer.classList.remove('hidden');
       }
       
-      emptyState.style.display = 'none';
-      document.getElementById('codes-table').style.display = 'table';
-      
-      // Сортировка кодов по дате создания (новые сверху)
-      codes.sort((a, b) => new Date(b.created) - new Date(a.created));
-      
-      codes.forEach(code => {
-        const row = document.createElement('tr');
-        
-        // Формирование ссылки
-        const bookmarkletLink = `javascript:import('${baseUrl}/${code.code}')`;
-        
-        const lastUsedText = code.lastUsed ? formatDate(code.lastUsed) : 'Не использовался';
-        
-        row.innerHTML = `
-          <td><span class="code-badge">${code.code}</span></td>
-          <td class="link-column">
-            <div class="link-value">${bookmarkletLink}</div>
-          </td>
-          <td>
-            <span class="status-badge ${code.active ? 'status-active' : 'status-inactive'}">
-              ${code.active ? 'Активен' : 'Неактивен'}
-            </span>
-          </td>
-          <td>${formatDate(code.created)}</td>
-          <td>${lastUsedText}</td>
-          <td>${code.useCount}</td>
-          <td>
-            <div class="actions">
-              <button class="action-btn copy-btn" data-link="${bookmarkletLink}" title="Копировать ссылку">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-              </button>
-              <a class="action-btn guide-btn" href="/guide/${code.code}" target="_blank" title="Открыть руководство">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-              </a>
-              <button class="action-btn toggle-btn" data-code="${code.code}" data-active="${code.active}" title="${code.active ? 'Деактивировать' : 'Активировать'}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-              <button class="action-btn delete-btn" data-code="${code.code}" title="Удалить">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </button>
-            </div>
-          </td>
-        `;
-        
-        codesList.appendChild(row);
-      });
-      
-      // Добавляем обработчики для кнопок
-      document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const link = this.getAttribute('data-link');
-          copyToClipboard(link);
-        });
-      });
-      
-      document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const code = this.getAttribute('data-code');
-          const isActive = this.getAttribute('data-active') === 'true';
-          toggleCodeStatus(code, !isActive);
-        });
-      });
-      
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const code = this.getAttribute('data-code');
-          showDeleteModal(code);
-        });
-      });
-    }
-    
-    // Создание нового кода
-    async function createNewCode() {
-      try {
-        const response = await fetch('/api/access-codes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
+      // Удаление кода
+      function deleteCode(id) {
+        if (confirm('Вы уверены, что хотите удалить этот код доступа?')) {
+          // Имитация удаления
+          const index = codesData.findIndex(code => code.id === id);
+          if (index !== -1) {
+            codesData.splice(index, 1);
+            renderCodes(codesData);
+            alert('Код успешно удален');
           }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при создании кода');
         }
-        
-        // Перезагрузка списка кодов
-        loadCodes();
-      } catch (error) {
-        console.error('Ошибка:', error);
       }
-    }
-    
-    // Включение/отключение кода
-    async function toggleCodeStatus(code, active) {
-      try {
-        const response = await fetch(`/api/access-codes/${code}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ active })
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при изменении статуса кода');
-        }
-        
-        // Перезагрузка списка кодов
-        loadCodes();
-      } catch (error) {
-        console.error('Ошибка:', error);
-      }
-    }
-    
-    // Показать модальное окно подтверждения удаления
-    function showDeleteModal(code) {
-      codeToDelete = code;
-      deleteCodeId.textContent = code;
-      deleteModal.classList.add('visible');
-    }
-    
-    // Удаление кода
-    async function deleteCode() {
-      if (!codeToDelete) return;
       
-      try {
-        const response = await fetch(`/api/access-codes/${codeToDelete}`, {
-          method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при удалении кода');
-        }
-        
-        // Закрыть модальное окно
-        deleteModal.classList.remove('visible');
-        codeToDelete = null;
-        
-        // Перезагрузка списка кодов
-        loadCodes();
-      } catch (error) {
-        console.error('Ошибка:', error);
-      }
-    }
-    
-    // Копирование ссылки в буфер обмена
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          // Показать уведомление об успешном копировании
-          successAlert.style.display = 'block';
-          setTimeout(() => {
-            successAlert.style.display = 'none';
-          }, 3000);
-        })
-        .catch(err => console.error('Ошибка при копировании ссылки:', err));
-    }
-    
-    // Форматирование даты
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      // Добавление кода
+      addCodeBtn.addEventListener('click', function() {
+        formTitle.textContent = 'Создание кода доступа';
+        codeForm.reset();
+        document.getElementById('code-id').value = '';
+        codeFormContainer.classList.remove('hidden');
       });
-    }
-    
-    // Обработчик выхода из системы
-    document.getElementById('logout-btn').addEventListener('click', async function() {
-      try {
-        const response = await fetch('/api/logout', {
-          method: 'POST'
+      
+      // Отмена формы
+      cancelFormBtn.addEventListener('click', function() {
+        codeFormContainer.classList.add('hidden');
+      });
+      
+      // Закрытие информации о коде
+      closeInfoBtn.addEventListener('click', function() {
+        codeInfoContainer.classList.add('hidden');
+      });
+      
+      // Копирование кода
+      copyCodeBtn.addEventListener('click', function() {
+        const code = generatedCodeDisplay.textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          alert('Код скопирован в буфер обмена');
+        }).catch(err => {
+          console.error('Ошибка при копировании: ', err);
         });
+      });
+      
+      // Обработка формы
+      codeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        if (response.ok) {
-          window.location.href = '/login';
-        }
-      } catch (error) {
-        console.error('Ошибка при выходе из системы:', error);
-      }
+        // Генерация случайного кода
+        const generateRandomCode = () => {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 9; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        };
+        
+        const newCode = {
+          id: codesData.length + 1,
+          code: generateRandomCode(),
+          description: document.getElementById('code-description').value,
+          created: new Date().toLocaleDateString('ru-RU'),
+          expires: new Date(Date.now() + parseInt(document.getElementById('code-expiry').value) * 24 * 60 * 60 * 1000).toLocaleDateString('ru-RU'),
+          status: 'active',
+          maxUses: parseInt(document.getElementById('code-max-uses').value),
+          usesCount: 0
+        };
+        
+        codesData.push(newCode);
+        renderCodes(codesData);
+        
+        // Показываем информацию о новом коде
+        generatedCodeDisplay.textContent = newCode.code;
+        codeFormContainer.classList.add('hidden');
+        codeInfoContainer.classList.remove('hidden');
+      });
+      
+      // Начальное отображение
+      renderCodes(codesData);
     });
   </script>
 </body>

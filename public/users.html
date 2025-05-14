@@ -3,794 +3,348 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Управление пользователями</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Управление пользователями - Система мониторинга</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --primary-color: #5046e5;
-      --primary-light: #6e66ff;
-      --secondary-color: #f0f0ff;
-      --text-color: #333;
-      --text-light: #666;
-      --border-color: #e0e0e0;
-      --danger-color: #e53935;
-      --warning-color: #f57c00;
-      --success-color: #43a047;
-      --background-light: #f9f9ff;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Дополнительные стили для страницы пользователей */
+    .panel {
+      margin-bottom: var(--spacing-lg);
     }
     
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.5;
-      color: var(--text-color);
-      background-color: #f5f5f5;
-      padding: 0;
-      overflow-x: hidden;
-    }
-    
-    header {
-      background-color: #fff;
-      border-bottom: 1px solid var(--border-color);
-      padding: 1rem;
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header-content {
-      max-width: 1200px;
-      margin: 0 auto;
+    .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: var(--spacing-md);
     }
     
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: normal;
     }
     
-    .logo-icon {
-      width: 24px;
-      height: 24px;
-      background-color: var(--primary-color);
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
+    .panel-content {
+      border: 1px solid var(--lighter-gray);
+      background-color: var(--white);
+      padding: var(--spacing-md);
     }
     
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .nav-link {
-      font-size: 0.8rem;
-      color: var(--text-light);
-      padding: 0.25rem 0.5rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background-color: transparent;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-    
-    .nav-link:hover {
-      background-color: var(--secondary-color);
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .nav-link.active {
-      background-color: var(--secondary-color);
-      color: var(--primary-color);
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
-    
-    .card {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-color);
-    }
-    
-    .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-    }
-    
-    .btn-primary {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      background-color: var(--primary-light);
-    }
-    
-    .btn-danger {
-      background-color: var(--danger-color);
-      color: white;
-    }
-    
-    .btn-danger:hover {
-      background-color: #f44336;
-    }
-    
-    table {
+    .data-table {
       width: 100%;
       border-collapse: collapse;
     }
     
-    th, td {
-      padding: 0.75rem;
+    .data-table th, .data-table td {
+      padding: var(--spacing-sm);
       text-align: left;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--bg-gray);
     }
     
-    th {
-      font-weight: 600;
-      color: var(--text-light);
-      background-color: var(--background-light);
+    .data-table th {
+      background-color: var(--bg-gray);
     }
     
-    tr:hover {
-      background-color: var(--background-light);
+    .data-table tr:hover {
+      background-color: var(--bg-gray);
     }
     
-    .status-badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      font-weight: 500;
+    .form-row {
+      margin-bottom: var(--spacing-md);
     }
     
-    .status-active {
-      background-color: rgba(67, 160, 71, 0.1);
-      color: var(--success-color);
-    }
-    
-    .status-inactive {
-      background-color: rgba(229, 57, 53, 0.1);
-      color: var(--danger-color);
-    }
-    
-    .status-admin {
-      background-color: rgba(80, 70, 229, 0.1);
-      color: var(--primary-color);
-    }
-    
-    .action-btn {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid var(--border-color);
-      background-color: white;
-      color: var(--text-color);
-      margin-right: 0.25rem;
-    }
-    
-    .action-btn:hover {
-      background-color: var(--background-light);
-    }
-    
-    .action-btn-danger {
-      color: var(--danger-color);
-      border-color: var(--danger-color);
-    }
-    
-    .action-btn-danger:hover {
-      background-color: rgba(229, 57, 53, 0.1);
-    }
-    
-    .action-btn-success {
-      color: var(--success-color);
-      border-color: var(--success-color);
-    }
-    
-    .action-btn-success:hover {
-      background-color: rgba(67, 160, 71, 0.1);
-    }
-    
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-    
-    .modal-content {
-      background-color: white;
-      margin: 10% auto;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      width: 90%;
-      max-width: 500px;
-    }
-    
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    
-    .modal-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    
-    .close-modal {
-      font-size: 1.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--text-light);
-    }
-    
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    
-    .form-label {
+    .form-row label {
       display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-    }
-    
-    .form-control {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    
-    .form-control:focus {
-      border-color: var(--primary-color);
-    }
-    
-    .form-check {
-      display: flex;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    
-    .form-check-input {
-      margin-right: 0.5rem;
+      margin-bottom: var(--spacing-xs);
+      font-weight: bold;
     }
     
     .form-actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      margin-top: 1rem;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-md);
     }
     
-    .error-message {
-      color: var(--danger-color);
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-      display: none;
+    .role-admin {
+      color: var(--accent-blue);
+      font-weight: bold;
     }
     
-    .error-message.visible {
-      display: block;
+    .role-user {
+      color: var(--medium-gray);
     }
     
-    .toggle-switch {
+    .status-active {
+      color: var(--accent-green);
+    }
+    
+    .status-inactive {
+      color: var(--lighter-gray);
+    }
+    
+    .search-box {
       position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 20px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: var(--spacing-md);
     }
     
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
+    .search-input {
+      width: 100%;
+      padding: var(--spacing-sm);
+      border: 1px solid var(--lighter-gray);
+      font-family: 'Consolas', monospace;
     }
     
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    
-    .toggle-slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 2px;
-      bottom: 2px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    
-    input:checked + .toggle-slider {
-      background-color: var(--primary-color);
-    }
-    
-    input:checked + .toggle-slider:before {
-      transform: translateX(20px);
-    }
-    
-    input:disabled + .toggle-slider {
-      background-color: #e0e0e0;
-      cursor: not-allowed;
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="header-content">
-      <div class="logo">
-        <div class="logo-icon">z</div>
-        <span>ZXC11</span>
-      </div>
-      <div class="nav-links">
-        <a href="/admin" class="nav-link">Монитор</a>
-        <a href="/admin/access-codes" class="nav-link">Коды доступа</a>
-        <a href="/todo" class="nav-link">Todo и Помодоро</a>
-        <a href="/admin/users" class="nav-link active">Пользователи</a>
-        <a href="/admin/sessions" class="nav-link">Сессии</a>
-        <a href="/admin/export-import" class="nav-link">Экспорт/Импорт</a>
-        <button id="logout-btn" class="logout-btn">Выйти</button>
-      </div>
+    <div class="container header-content">
+      <h1 class="header-title">Система мониторинга</h1>
+      <nav>
+        <ul>
+          <li><a href="admin.html">Панель управления</a></li>
+          <li><a href="todo.html">ToDo и Помодоро</a></li>
+          <li><a href="users.html" class="bg-accent-blue">Пользователи</a></li>
+          <li><a href="/logout">Выход</a></li>
+        </ul>
+      </nav>
     </div>
   </header>
-  
-  <div class="container">
-    <div class="card">
-      <div class="card-header">
-        <h1 class="card-title">Управление пользователями</h1>
-        <button id="add-user-btn" class="btn btn-primary">Добавить пользователя</button>
+
+  <main class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Управление пользователями</h2>
+        <button class="btn btn-primary" id="add-user-btn">Добавить пользователя</button>
       </div>
       
-      <table id="users-table">
-        <thead>
-          <tr>
-            <th>Логин</th>
-            <th>Статус</th>
-            <th>Права</th>
-            <th>Доступ к кодам</th>
-            <th>Создан</th>
-            <th>Последний вход</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Данные будут загружены через JavaScript -->
-        </tbody>
-      </table>
+      <div class="search-box">
+        <input type="text" class="search-input" id="search-users" placeholder="Поиск пользователей...">
+      </div>
+      
+      <div class="panel-content">
+        <table class="data-table" id="users-table">
+          <thead>
+            <tr>
+              <th>Логин</th>
+              <th>Имя</th>
+              <th>Роль</th>
+              <th>Статус</th>
+              <th>Дата регистрации</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Данные пользователей будут загружены через JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-  
-  <!-- Модальное окно для создания пользователя -->
-  <div id="add-user-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Добавить пользователя</h2>
-        <span class="close-modal" id="close-add-modal">&times;</span>
+    
+    <!-- Форма добавления/редактирования пользователя (скрыта по умолчанию) -->
+    <div class="card hidden" id="user-form-container">
+      <div class="card-header">
+        <h3 class="card-title" id="form-title">Добавление пользователя</h3>
       </div>
       
-      <form id="add-user-form">
-        <div class="form-group">
-          <label for="new-login" class="form-label">Логин</label>
-          <input type="text" id="new-login" class="form-control" required>
+      <form id="user-form">
+        <input type="hidden" id="user-id">
+        
+        <div class="form-row">
+          <label for="user-login">Логин:</label>
+          <input type="text" id="user-login" name="login" required>
         </div>
         
-        <div class="form-group">
-          <label for="new-password" class="form-label">Пароль</label>
-          <input type="password" id="new-password" class="form-control" required>
+        <div class="form-row">
+          <label for="user-name">Имя:</label>
+          <input type="text" id="user-name" name="name" required>
         </div>
         
-        <div class="form-check">
-          <input type="checkbox" id="new-is-admin" class="form-check-input">
-          <label for="new-is-admin" class="form-check-label">Права администратора</label>
+        <div class="form-row">
+          <label for="user-password">Пароль:</label>
+          <input type="password" id="user-password" name="password">
+          <p class="hint">Оставьте пустым, чтобы не менять пароль при редактировании</p>
         </div>
         
-        <div class="form-group">
-          <div class="checkbox-group">
-            <input type="checkbox" id="new-user-can-create-codes" name="canCreateCodes">
-            <label for="new-user-can-create-codes">Право создавать коды доступа</label>
-          </div>
+        <div class="form-row">
+          <label for="user-role">Роль:</label>
+          <select id="user-role" name="role">
+            <option value="user">Пользователь</option>
+            <option value="admin">Администратор</option>
+          </select>
         </div>
         
-        <div id="add-error-message" class="error-message"></div>
+        <div class="form-row">
+          <label for="user-status">Статус:</label>
+          <select id="user-status" name="status">
+            <option value="active">Активен</option>
+            <option value="inactive">Неактивен</option>
+          </select>
+        </div>
         
         <div class="form-actions">
-          <button type="button" class="btn" id="cancel-add">Отмена</button>
           <button type="submit" class="btn btn-primary">Сохранить</button>
+          <button type="button" class="btn" id="cancel-form">Отмена</button>
         </div>
       </form>
     </div>
-  </div>
+  </main>
+  
+  <!-- Шаблон строки пользователя -->
+  <template id="user-row-template">
+    <tr>
+      <td class="user-login"></td>
+      <td class="user-name"></td>
+      <td class="user-role"></td>
+      <td class="user-status"></td>
+      <td class="user-created"></td>
+      <td class="user-actions">
+        <button class="btn btn-primary edit-user">Изменить</button>
+        <button class="btn btn-danger delete-user">Удалить</button>
+      </td>
+    </tr>
+  </template>
   
   <script>
-    // Глобальные переменные
-    let users = [];
-    const currentUserLogin = ''; // Будет установлено при загрузке данных
-    
-    // DOM элементы
-    const usersTable = document.getElementById('users-table');
-    const addUserBtn = document.getElementById('add-user-btn');
-    const addUserModal = document.getElementById('add-user-modal');
-    const closeAddModal = document.getElementById('close-add-modal');
-    const cancelAddBtn = document.getElementById('cancel-add');
-    const addUserForm = document.getElementById('add-user-form');
-    const addErrorMessage = document.getElementById('add-error-message');
-    const logoutBtn = document.getElementById('logout-btn');
-    
-    // Форматирование даты
-    function formatDate(dateString) {
-      if (!dateString) return 'Никогда';
-      const date = new Date(dateString);
-      return date.toLocaleString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    
-    // Загрузка списка пользователей
-    async function loadUsers() {
-      try {
-        const response = await fetch('/api/users');
-        
-        if (!response.ok) {
-          throw new Error('Ошибка загрузки списка пользователей');
-        }
-        
-        users = await response.json();
-        renderUsersTable();
-      } catch (error) {
-        console.error('Ошибка при загрузке пользователей:', error);
-      }
-    }
-    
-    // Отрисовка таблицы пользователей
-    function renderUsersTable() {
-      const tbody = usersTable.querySelector('tbody');
-      tbody.innerHTML = '';
+    // Здесь будет JavaScript для управления пользователями
+    document.addEventListener('DOMContentLoaded', function() {
+      // Имитация загрузки пользователей
+      const usersData = [
+        { id: 1, login: 'admin', name: 'Администратор', role: 'admin', status: 'active', created: '01.01.2023' },
+        { id: 2, login: 'user1', name: 'Иван Петров', role: 'user', status: 'active', created: '15.02.2023' },
+        { id: 3, login: 'user2', name: 'Мария Сидорова', role: 'user', status: 'inactive', created: '10.03.2023' }
+      ];
       
-      users.forEach(user => {
-        const tr = document.createElement('tr');
+      const usersTableBody = document.getElementById('users-table-body');
+      const userRowTemplate = document.getElementById('user-row-template');
+      const addUserBtn = document.getElementById('add-user-btn');
+      const userForm = document.getElementById('user-form');
+      const userFormContainer = document.getElementById('user-form-container');
+      const cancelFormBtn = document.getElementById('cancel-form');
+      const formTitle = document.getElementById('form-title');
+      const searchInput = document.getElementById('search-users');
+      
+      // Отображение пользователей
+      function renderUsers(users) {
+        usersTableBody.innerHTML = '';
         
-        // Определяем, является ли пользователь текущим (логин совпадает)
-        const isCurrentUser = user.login.toLowerCase() === currentUserLogin.toLowerCase();
-        const isMainAdmin = user.login === 'Mrak';
-        
-        tr.innerHTML = `
-          <td>${user.login}</td>
-          <td>
-            <span class="status-badge ${user.isActive ? 'status-active' : 'status-inactive'}">
-              ${user.isActive ? 'Активен' : 'Неактивен'}
-            </span>
-          </td>
-          <td>
-            <span class="status-badge ${user.isAdmin ? 'status-admin' : ''}">
-              ${user.isAdmin ? 'Администратор' : 'Пользователь'}
-            </span>
-          </td>
-          <td>
-            <div class="toggle-switch">
-              <input type="checkbox" class="codes-access-toggle" ${user.canCreateCodes ? 'checked' : ''} ${user.login === 'Mrak' ? 'disabled' : ''}>
-              <span class="toggle-slider"></span>
-            </div>
-          </td>
-          <td>${formatDate(user.createdAt)}</td>
-          <td>${formatDate(user.lastLogin)}</td>
-          <td>
-            ${!user.isActive ? 
-              `<button class="action-btn action-btn-success activate-user" data-login="${user.login}">Активировать</button>` : 
-              (!isMainAdmin && !isCurrentUser ? 
-                `<button class="action-btn action-btn-danger deactivate-user" data-login="${user.login}">Деактивировать</button>` : 
-                ''
-              )
-            }
-            ${!isMainAdmin && !isCurrentUser ? 
-              `<button class="action-btn action-btn-danger delete-user" data-login="${user.login}">Удалить</button>` : 
-              ''
-            }
-          </td>
-        `;
-        
-        tbody.appendChild(tr);
-      });
-      
-      // Добавляем обработчики событий для кнопок
-      document.querySelectorAll('.activate-user').forEach(btn => {
-        btn.addEventListener('click', activateUser);
-      });
-      
-      document.querySelectorAll('.deactivate-user').forEach(btn => {
-        btn.addEventListener('click', deactivateUser);
-      });
-      
-      document.querySelectorAll('.delete-user').forEach(btn => {
-        btn.addEventListener('click', deleteUser);
-      });
-      
-      document.querySelectorAll('.codes-access-toggle').forEach(toggle => {
-        toggle.addEventListener('change', async (e) => {
-          const canCreateCodes = e.target.checked;
-          const login = e.target.closest('tr').dataset.login;
+        users.forEach(user => {
+          const row = document.importNode(userRowTemplate.content, true);
           
-          try {
-            const response = await fetch(`/api/users/${login}/access-codes-permission`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ canCreateCodes })
-            });
-            
-            if (!response.ok) {
-              const data = await response.json();
-              throw new Error(data.error || 'Ошибка при изменении прав пользователя');
-            }
-            
-            showNotification(`Права на создание кодов ${canCreateCodes ? 'разрешены' : 'запрещены'} для ${login}`, 'success');
-          } catch (error) {
-            console.error('Ошибка:', error);
-            showNotification(error.message, 'error');
-            e.target.checked = !canCreateCodes; // Возвращаем предыдущее состояние
-          }
+          row.querySelector('.user-login').textContent = user.login;
+          row.querySelector('.user-name').textContent = user.name;
+          
+          const roleCell = row.querySelector('.user-role');
+          roleCell.textContent = user.role === 'admin' ? 'Администратор' : 'Пользователь';
+          roleCell.classList.add(user.role === 'admin' ? 'role-admin' : 'role-user');
+          
+          const statusCell = row.querySelector('.user-status');
+          statusCell.textContent = user.status === 'active' ? 'Активен' : 'Неактивен';
+          statusCell.classList.add(user.status === 'active' ? 'status-active' : 'status-inactive');
+          
+          row.querySelector('.user-created').textContent = user.created;
+          
+          // Обработчики кнопок
+          const editBtn = row.querySelector('.edit-user');
+          editBtn.addEventListener('click', () => editUser(user));
+          
+          const deleteBtn = row.querySelector('.delete-user');
+          deleteBtn.addEventListener('click', () => deleteUser(user.id));
+          
+          usersTableBody.appendChild(row);
         });
+      }
+      
+      // Поиск пользователей
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredUsers = usersData.filter(user => 
+          user.login.toLowerCase().includes(searchTerm) || 
+          user.name.toLowerCase().includes(searchTerm)
+        );
+        renderUsers(filteredUsers);
       });
-    }
-    
-    // Активация пользователя
-    async function activateUser(event) {
-      const login = event.target.dataset.login;
       
-      try {
-        const response = await fetch(`/api/users/${login}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ isActive: true })
-        });
+      // Редактирование пользователя
+      function editUser(user) {
+        formTitle.textContent = 'Редактирование пользователя';
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('user-login').value = user.login;
+        document.getElementById('user-name').value = user.name;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-role').value = user.role;
+        document.getElementById('user-status').value = user.status;
         
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Ошибка активации пользователя');
-        }
-        
-        // Обновляем список пользователей
-        await loadUsers();
-      } catch (error) {
-        console.error('Ошибка при активации пользователя:', error);
-        alert(error.message);
-      }
-    }
-    
-    // Деактивация пользователя
-    async function deactivateUser(event) {
-      const login = event.target.dataset.login;
-      
-      if (!confirm(`Вы уверены, что хотите деактивировать пользователя "${login}"?`)) {
-        return;
+        userFormContainer.classList.remove('hidden');
       }
       
-      try {
-        const response = await fetch(`/api/users/${login}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ isActive: false })
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Ошибка деактивации пользователя');
-        }
-        
-        // Обновляем список пользователей
-        await loadUsers();
-      } catch (error) {
-        console.error('Ошибка при деактивации пользователя:', error);
-        alert(error.message);
-      }
-    }
-    
-    // Удаление пользователя
-    async function deleteUser(event) {
-      const login = event.target.dataset.login;
-      
-      if (!confirm(`Вы уверены, что хотите удалить пользователя "${login}"? Это действие нельзя отменить.`)) {
-        return;
-      }
-      
-      try {
-        const response = await fetch(`/api/users/${login}`, {
-          method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Ошибка удаления пользователя');
-        }
-        
-        // Обновляем список пользователей
-        await loadUsers();
-      } catch (error) {
-        console.error('Ошибка при удалении пользователя:', error);
-        alert(error.message);
-      }
-    }
-    
-    // Добавление нового пользователя
-    async function addUser(event) {
-      event.preventDefault();
-      
-      const login = document.getElementById('new-login').value.trim();
-      const password = document.getElementById('new-password').value;
-      const isAdmin = document.getElementById('new-is-admin').checked;
-      const canCreateCodes = document.getElementById('new-user-can-create-codes').checked;
-      
-      try {
-        const response = await fetch('/api/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ login, password, isAdmin, canCreateCodes })
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Ошибка создания пользователя');
-        }
-        
-        // Закрываем модальное окно и сбрасываем форму
-        addUserModal.style.display = 'none';
-        addUserForm.reset();
-        addErrorMessage.textContent = '';
-        addErrorMessage.classList.remove('visible');
-        
-        // Обновляем список пользователей
-        await loadUsers();
-      } catch (error) {
-        console.error('Ошибка при создании пользователя:', error);
-        addErrorMessage.textContent = error.message;
-        addErrorMessage.classList.add('visible');
-      }
-    }
-    
-    // Выход из системы
-    async function logout() {
-      try {
-        const response = await fetch('/api/logout', {
-          method: 'POST'
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при выходе из системы');
-        }
-        
-        window.location.href = '/login';
-      } catch (error) {
-        console.error('Ошибка при выходе из системы:', error);
-      }
-    }
-    
-    // Обработчики событий
-    addUserBtn.addEventListener('click', function() {
-      addUserModal.style.display = 'block';
-    });
-    
-    closeAddModal.addEventListener('click', function() {
-      addUserModal.style.display = 'none';
-      addUserForm.reset();
-      addErrorMessage.textContent = '';
-      addErrorMessage.classList.remove('visible');
-    });
-    
-    cancelAddBtn.addEventListener('click', function() {
-      addUserModal.style.display = 'none';
-      addUserForm.reset();
-      addErrorMessage.textContent = '';
-      addErrorMessage.classList.remove('visible');
-    });
-    
-    window.addEventListener('click', function(event) {
-      if (event.target === addUserModal) {
-        addUserModal.style.display = 'none';
-        addUserForm.reset();
-        addErrorMessage.textContent = '';
-        addErrorMessage.classList.remove('visible');
-      }
-    });
-    
-    addUserForm.addEventListener('submit', addUser);
-    logoutBtn.addEventListener('click', logout);
-    
-    // Инициализация страницы
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Загружаем список пользователей
-      await loadUsers();
-      
-      // Проверяем, получили ли мы информацию о текущем пользователе
-      try {
-        const response = await fetch('/api/current-user');
-        
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.login) {
-            // Сохраняем логин текущего пользователя
-            currentUserLogin = userData.login;
-            // Перерендериваем таблицу с учетом текущего пользователя
-            renderUsersTable();
+      // Удаление пользователя
+      function deleteUser(id) {
+        if (confirm('Вы уверены, что хотите удалить пользователя?')) {
+          // Имитация удаления
+          const index = usersData.findIndex(user => user.id === id);
+          if (index !== -1) {
+            usersData.splice(index, 1);
+            renderUsers(usersData);
+            alert('Пользователь успешно удален');
           }
         }
-      } catch (error) {
-        console.error('Ошибка при загрузке информации о текущем пользователе:', error);
       }
+      
+      // Добавление пользователя
+      addUserBtn.addEventListener('click', function() {
+        formTitle.textContent = 'Добавление пользователя';
+        userForm.reset();
+        document.getElementById('user-id').value = '';
+        userFormContainer.classList.remove('hidden');
+      });
+      
+      // Отмена формы
+      cancelFormBtn.addEventListener('click', function() {
+        userFormContainer.classList.add('hidden');
+      });
+      
+      // Обработка формы
+      userForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const userId = document.getElementById('user-id').value;
+        const userData = {
+          login: document.getElementById('user-login').value,
+          name: document.getElementById('user-name').value,
+          password: document.getElementById('user-password').value,
+          role: document.getElementById('user-role').value,
+          status: document.getElementById('user-status').value,
+          created: new Date().toLocaleDateString('ru-RU')
+        };
+        
+        if (userId) {
+          // Редактирование
+          const index = usersData.findIndex(user => user.id === parseInt(userId));
+          if (index !== -1) {
+            usersData[index] = { ...usersData[index], ...userData };
+            alert('Пользователь успешно обновлен');
+          }
+        } else {
+          // Добавление
+          const newUser = { 
+            id: usersData.length + 1, 
+            ...userData 
+          };
+          usersData.push(newUser);
+          alert('Пользователь успешно добавлен');
+        }
+        
+        renderUsers(usersData);
+        userFormContainer.classList.add('hidden');
+      });
+      
+      // Начальное отображение
+      renderUsers(usersData);
     });
   </script>
 </body>

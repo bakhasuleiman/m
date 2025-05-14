@@ -1,0 +1,212 @@
+/* Базовые стили для минималистичного дизайна */
+:root {
+  /* Основные цвета */
+  --dark-gray: #1a1a1a;
+  --medium-gray: #333333;
+  --light-gray: #666666;
+  --lighter-gray: #999999;
+  --bg-gray: #f0f0f0;
+  --white: #ffffff;
+  
+  /* Акцентные цвета */
+  --accent-blue: #3a5a78;
+  --accent-green: #2c5e4c;
+  
+  /* Размеры и отступы */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Consolas', monospace;
+  line-height: 1.6;
+  color: var(--medium-gray);
+  background-color: var(--bg-gray);
+  padding: 0;
+  letter-spacing: -0.03em;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Consolas', monospace;
+  font-weight: normal;
+  color: var(--dark-gray);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Кнопки и формы */
+.btn {
+  display: inline-block;
+  background-color: var(--medium-gray);
+  color: var(--white);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  cursor: pointer;
+  font-family: 'Consolas', monospace;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.btn:hover {
+  background-color: var(--dark-gray);
+}
+
+.btn-primary {
+  background-color: var(--accent-blue);
+}
+
+.btn-primary:hover {
+  background-color: #2d4860;
+}
+
+.btn-secondary {
+  background-color: var(--accent-green);
+}
+
+.btn-secondary:hover {
+  background-color: #224a3c;
+}
+
+.btn-danger {
+  background-color: #5a2c2c;
+}
+
+.btn-danger:hover {
+  background-color: #482424;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--lighter-gray);
+  font-family: 'Consolas', monospace;
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-md);
+  background-color: var(--white);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+/* Карточки и блоки */
+.card {
+  background-color: var(--white);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--lighter-gray);
+}
+
+.card-header {
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--bg-gray);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  color: var(--dark-gray);
+}
+
+/* Навигация и шапка */
+header {
+  background-color: var(--medium-gray);
+  color: var(--white);
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--dark-gray);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+}
+
+nav ul {
+  display: flex;
+  list-style: none;
+}
+
+nav li {
+  margin-left: var(--spacing-md);
+}
+
+nav a {
+  color: var(--white);
+  text-decoration: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  opacity: 0.9;
+}
+
+nav a:hover {
+  background-color: var(--dark-gray);
+  opacity: 1;
+}
+
+/* Таблицы */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-lg);
+}
+
+th, td {
+  padding: var(--spacing-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--bg-gray);
+}
+
+th {
+  background-color: var(--bg-gray);
+  color: var(--dark-gray);
+}
+
+/* Другие элементы */
+hr {
+  border: none;
+  border-top: 1px solid var(--lighter-gray);
+  margin: var(--spacing-md) 0;
+}
+
+.text-accent-blue {
+  color: var(--accent-blue);
+}
+
+.text-accent-green {
+  color: var(--accent-green);
+}
+
+.bg-accent-blue {
+  background-color: var(--accent-blue);
+  color: var(--white);
+}
+
+.bg-accent-green {
+  background-color: var(--accent-green);
+  color: var(--white);
+} 

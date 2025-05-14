@@ -3,314 +3,185 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZXC</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Руководство пользователя - Система мониторинга</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --primary-color: #5046e5;
-      --primary-light: #6e66ff;
-      --secondary-color: #f0f0ff;
-      --text-color: #333;
-      --text-light: #666;
-      --border-color: #e0e0e0;
-      --background-light: #f9f9ff;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      --success-color: #43a047;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.4;
-      color: var(--text-color);
-      background-color: #f5f5f5;
-      padding: 0;
-      font-size: 14px;
-    }
-    
-    header {
-      background-color: #fff;
-      border-bottom: 1px solid var(--border-color);
-      padding: 0.75rem;
-      box-shadow: var(--shadow);
-    }
-    
-    .header-content {
-      max-width: 650px;
+    .guide-container {
+      max-width: 800px;
       margin: 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      padding: var(--spacing-lg);
+      background-color: var(--white);
+      border: 1px solid var(--lighter-gray);
+      margin-top: var(--spacing-xl);
+      margin-bottom: var(--spacing-xl);
     }
     
-    .logo {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .logo-icon {
-      width: 20px;
-      height: 20px;
-      background-color: var(--primary-color);
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-    }
-    
-    .container {
-      max-width: 650px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
-    
-    .page-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: var(--primary-color);
+    .guide-title {
+      font-size: 1.8rem;
+      margin-bottom: var(--spacing-lg);
+      text-align: center;
+      color: var(--dark-gray);
     }
     
     .guide-section {
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: var(--spacing-xl);
     }
     
-    .section-title {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
+    .guide-section-title {
+      font-size: 1.3rem;
+      margin-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--bg-gray);
+      padding-bottom: var(--spacing-xs);
     }
     
-    p {
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
+    .guide-step {
+      margin-bottom: var(--spacing-md);
     }
     
-    ul {
-      margin-bottom: 0.5rem;
-      padding-left: 1.25rem;
+    .guide-step-number {
+      font-weight: bold;
+      color: var(--accent-blue);
+      display: inline-block;
+      width: 24px;
     }
     
-    li {
-      margin-bottom: 0.25rem;
+    .guide-image {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--lighter-gray);
+      margin: var(--spacing-md) 0;
     }
     
     .code-block {
-      background-color: var(--background-light);
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      font-family: monospace;
+      background-color: var(--bg-gray);
+      padding: var(--spacing-md);
+      border: 1px solid var(--lighter-gray);
+      font-family: 'Consolas', monospace;
       overflow-x: auto;
-      white-space: nowrap;
+      white-space: pre;
+      margin: var(--spacing-md) 0;
     }
     
     .important-note {
-      background-color: var(--secondary-color);
-      border-left: 4px solid var(--primary-color);
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      font-size: 0.9rem;
+      background-color: var(--bg-gray);
+      border-left: 4px solid var(--accent-blue);
+      padding: var(--spacing-md);
+      margin: var(--spacing-md) 0;
     }
     
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      text-decoration: none;
-    }
-    
-    .btn:hover {
-      background-color: var(--primary-light);
-    }
-    
-    .btn-copy {
-      margin-top: 0.5rem;
-    }
-    
-    .alert {
-      padding: 0.5rem 0.75rem;
-      border-radius: 4px;
-      margin-bottom: 0.75rem;
-      font-size: 0.8rem;
-      display: none;
-    }
-    
-    .alert-success {
-      background-color: rgba(67, 160, 71, 0.1);
-      color: var(--success-color);
-      border: 1px solid rgba(67, 160, 71, 0.2);
-    }
-    
-    .shortcuts {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.5rem 1rem;
-      font-size: 0.9rem;
-    }
-    
-    .key {
+    .back-button {
       display: inline-block;
-      background-color: #f1f1f1;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-size: 0.8em;
-      font-family: monospace;
+      margin-top: var(--spacing-lg);
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <div class="logo">
-        <div class="logo-icon">Z</div>
-        <span>ZXC11</span>
-      </div>
-    </div>
-  </header>
-  
-  <div class="container">
-    <div id="success-alert" class="alert alert-success">
-      Код скопирован в буфер обмена
-    </div>
+  <div class="guide-container">
+    <h1 class="guide-title">Руководство пользователя по системе мониторинга</h1>
     
     <div class="guide-section">
-      <h2 class="section-title">Как использовать ZXC11</h2>
-      <p>Для быстрого подключения просто введите код в адресную строку вашего браузера:</p>
+      <h2 class="guide-section-title">Начало работы</h2>
+      <p>Добро пожаловать в систему мониторинга веб-страниц. Эта система позволяет отслеживать изменения на указанных веб-страницах и своевременно получать уведомления.</p>
       
-      <div class="code-block" id="bookmarklet-block">javascript:import('<span id="base-url-display">${window.location.origin}</span>/<span id="access-code-url">YOUR_CODE_HERE</span>')</div>
-      
-      <button id="copy-bookmarklet-btn" class="btn btn-copy">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        Копировать
-      </button>
-      
-      <div class="important-note" style="text-align: justify;">
-        <strong>Важно:</strong> В экстренных случаях: если вас заметили, незамедлительно обновите страницу (F5) или используйте другой метод для обновления страницы , это отключит код, и следов не останется.
+      <div class="important-note">
+        <p>Для использования системы необходимо выполнить одноразовую настройку вашего браузера, следуя инструкциям ниже.</p>
       </div>
     </div>
     
     <div class="guide-section">
-      <h2 class="section-title">Горячие клавиши</h2>
-      <div class="shortcuts">
-        <div><span class="key">Alt</span> + <span class="key">W</span></div>
-        <div>Показать/скрыть историю сообщений</div>
-        
-        <div><span class="key">←</span> / <span class="key">→</span></div>
-        <div>Навигация по сообщениям или используйте колесо мыши</div>
-        
-        <div><span class="key">Shift</span> + <span class="key">9</span> / <span class="key">0</span></div>
-        <div>Изменить прозрачность текста</div>
-
-        <div><span class="key">[</span> / <span class="key">]</span></div>
-        <div>Изменить размер текста</div>
-        
-        <div><span class="key">Esc</span></div>
-        <div>Скрыть сообщение или <span class="key">кликните</span> мышкой в любом месте</div>
+      <h2 class="guide-section-title">Установка расширения</h2>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">1.</span>
+        <span>Скопируйте и вставьте следующий код в закладку браузера:</span>
+      </div>
+      
+      <div class="code-block" id="bookmarklet-code">javascript:(function(){const s=document.createElement('script');s.src='https://example.com/monitor.js';document.body.appendChild(s);})();</div>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">2.</span>
+        <span>Создайте новую закладку в браузере:</span>
+        <ul>
+          <li>Нажмите правой кнопкой мыши на панель закладок</li>
+          <li>Выберите "Добавить страницу" или "Добавить закладку"</li>
+          <li>В поле "Имя" введите "Мониторинг"</li>
+          <li>В поле "URL" вставьте скопированный код</li>
+          <li>Нажмите "Сохранить"</li>
+        </ul>
       </div>
     </div>
-
+    
     <div class="guide-section">
-      <h2 class="section-title">Советы для удобного использования кода</h2>
-      <div class="shortcuts">
-        <div><span class="key">1. Подготовьте код заранее!</span></div>
-        <div style="text-align: justify;">Скопируйте код до или во время входа в аккаунт.
-          Где незаметно вписать код, чтобы потом быстро вставить?
-          → В строку поиска в браузере, где вы выполняете вход в аккаунт.</div>
-        
-        <div style="text-align: justify;"><span class="key">2. Как правильно копировать код?</span></div>
-        <div style="text-align: justify;"><p>Важно! Если вы копируете весь код полностью, <span class="key">javascript:</span> не скопируется, и его придётся дописывать вручную.</p> 
-          <p><b>Как этого избежать?
-            Копируйте код не полностью, а пропустив первую букву "J", например:</b></p> <p><span class="key">avascript:import("https://#####.com/1xxxx")</span></p> 
-            <p>Теперь при вставке вам останется дописать только одну букву "J" в начале, и код будет работать без проблем.</p></div>
-          
-        <div><span class="key">3. Окно "ZXC11" активно? Расслабьтесь и ждите ответы!</span></div>
-        <div style="text-align: justify;"><p>Если удалось активировать окно "ZXC11", сохраняйте спокойствие.</p>
-          <p>Делайте вид, что записываете что-то на листке, создавайте впечатление, что работаете.</p></div>  
+      <h2 class="guide-section-title">Использование системы</h2>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">1.</span>
+        <span>Откройте веб-страницу, которую хотите мониторить</span>
+      </div>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">2.</span>
+        <span>Нажмите на созданную закладку "Мониторинг"</span>
+      </div>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">3.</span>
+        <span>В появившемся окне настройте параметры мониторинга:</span>
+        <ul>
+          <li>Интервал проверки (минуты)</li>
+          <li>Часть страницы для отслеживания (если нужно отслеживать не всю страницу)</li>
+          <li>Тип уведомлений</li>
+        </ul>
+      </div>
+      
+      <div class="guide-step">
+        <span class="guide-step-number">4.</span>
+        <span>Нажмите "Сохранить и начать мониторинг"</span>
       </div>
     </div>
+    
+    <div class="guide-section">
+      <h2 class="guide-section-title">Получение уведомлений</h2>
+      <p>После настройки мониторинга вы будете получать уведомления об изменениях следующими способами:</p>
+      
+      <ul>
+        <li>Через браузерные уведомления (если они разрешены)</li>
+        <li>В панели мониторинга системы</li>
+        <li>По электронной почте (если настроено)</li>
+      </ul>
+      
+      <div class="important-note">
+        <p>Для получения браузерных уведомлений необходимо разрешить их в настройках браузера для сайта системы мониторинга.</p>
+      </div>
+    </div>
+    
+    <div class="guide-section">
+      <h2 class="guide-section-title">Часто задаваемые вопросы</h2>
+      
+      <h3>Почему не работает мониторинг на некоторых сайтах?</h3>
+      <p>Некоторые сайты имеют защиту от автоматического мониторинга. В этом случае попробуйте использовать режим "Снимок страницы" в настройках мониторинга.</p>
+      
+      <h3>Как часто обновляются данные?</h3>
+      <p>Частота обновления данных зависит от выбранного вами интервала при настройке мониторинга. Минимальный интервал - 5 минут.</p>
+      
+      <h3>Могу ли я мониторить страницы, требующие авторизации?</h3>
+      <p>Да, система будет использовать текущую сессию браузера для доступа к страницам, требующим авторизации.</p>
+    </div>
+    
+    <a href="javascript:history.back()" class="btn back-button">Вернуться назад</a>
   </div>
   
   <script>
-    // Получаем код из URL
-    function getAccessCodeFromUrl() {
-      const pathParts = window.location.pathname.split('/');
-      // Ищем последний непустой сегмент пути
-      for (let i = pathParts.length - 1; i >= 0; i--) {
-        if (pathParts[i] && pathParts[i].length === 3) {
-          return pathParts[i];
-        }
-      }
-      return null;
-    }
-    
-    // Устанавливаем код доступа на странице
-    const accessCode = getAccessCodeFromUrl();
-    if (accessCode) {
-      const codeElements = document.querySelectorAll('#access-code, #access-code-url');
-      codeElements.forEach(el => {
-        el.textContent = accessCode;
-      });
+    // Динамически генерируем код букмарклета с уникальным кодом
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessCode = urlParams.get('code') || 'demo';
       
-      // Обновляем базовый URL
-      document.getElementById('base-url-display').textContent = window.location.origin;
+      const bookmarkletCode = `javascript:(function(){const s=document.createElement('script');s.src='${window.location.origin}/autoload.js?code=${accessCode}';document.body.appendChild(s);})();`;
       
-      // Генерируем полный букмарклет
-      const bookmarkletCode = `javascript:import('${window.location.origin}/${accessCode}')`;
-    }
-    
-    // Копирование букмарклета в буфер обмена
-    document.getElementById('copy-bookmarklet-btn').addEventListener('click', function() {
-      const baseUrl = document.getElementById('base-url-display').textContent;
-      const code = document.getElementById('access-code-url').textContent;
-      const bookmarklet = `javascript:import('${baseUrl}/${code}')`;
-      copyToClipboard(bookmarklet, 'Букмарклет скопирован в буфер обмена');
+      document.getElementById('bookmarklet-code').textContent = bookmarkletCode;
     });
-    
-    // Функция для копирования в буфер обмена с выводом уведомления
-    function copyToClipboard(text, message) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          // Показать уведомление об успешном копировании
-          const successAlert = document.getElementById('success-alert');
-          successAlert.textContent = message || 'Скопировано в буфер обмена';
-          successAlert.style.display = 'block';
-          setTimeout(() => {
-            successAlert.style.display = 'none';
-          }, 3000);
-        })
-        .catch(err => console.error('Ошибка при копировании:', err));
-    }
   </script>
 </body>
 </html> 
